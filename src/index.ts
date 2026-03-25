@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { logError } from './utils/logger.js';
 import { EXIT_GENERAL, EXIT_INVALID_INPUT } from './utils/exit-codes.js';
 import { registerLoginCommand } from './commands/login.js';
+import { registerLogoutCommand } from './commands/logout.js';
 import { registerConnectCommand } from './commands/connect.js';
 import { registerDisconnectCommand } from './commands/disconnect.js';
 import { registerConnectionsCommand } from './commands/connections.js';
@@ -37,6 +38,7 @@ with them from the terminal. Designed for both humans and AI agents.
 
 // ── Register commands ──────────────────────────────────────────
 registerLoginCommand(program);
+registerLogoutCommand(program);
 registerStatusCommand(program);
 registerConnectCommand(program);
 registerConnectionsCommand(program);

@@ -37,6 +37,7 @@ describe('CLI integration', () => {
     expect(code).toBe(0);
     expect(stdout).toContain('auth0-tv');
     expect(stdout).toContain('login');
+    expect(stdout).toContain('logout');
     expect(stdout).toContain('gmail');
     expect(stdout).toContain('connect');
   });
@@ -178,6 +179,32 @@ describe('CLI credential flow', () => {
     // Connection token is cached and valid
     const connToken = await store.getConnectionToken('google-oauth2');
     expect(connToken).toBe(mockExchangeResponse.access_token);
+  });
+
+  it('logout clears all credentials and connections', async () => {
+    // Setup: logged in with a connection
+    await store.saveAuth0Tokens({
+      accessToken: mockTokenResponse.access_token,
+      refreshToken: mockTokenResponse.refresh_token,
+      expiresAt: Date.now() + 86400_000,
+    });
+    await store.saveConnectionToken('google-oauth2', {
+      accessToken: 'gmail-token',
+      expiresAt: Date.now() + 3600_000,
+      scopes: ['https://www.googleapis.com/auth/gmail.modify'],
+    });
+
+    // Verify state before logout
+    expect(await store.getAuth0Token()).toBe(mockTokenResponse.access_token);
+    expect(await store.listConnections()).toContain('google-oauth2');
+
+    // Logout
+    await store.clear();
+
+    // Everything is gone
+    expect(await store.getAuth0Token()).toBeNull();
+    expect(await store.getAuth0Tokens()).toBeNull();
+    expect(await store.listConnections()).toEqual([]);
   });
 
   it('expired tokens are not returned', async () => {
