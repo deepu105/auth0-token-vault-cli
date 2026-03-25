@@ -12,52 +12,46 @@ export interface Auth0Config {
 }
 
 /**
- * Try to load Auth0 config from environment variables only.
- * Returns null if any required variable is missing.
+ * Resolve each config field individually: env var → stored value.
+ * Returns the merged result and a list of missing required fields.
  */
-export function loadConfigFromEnv(): Auth0Config | null {
-  const domain = process.env.AUTH0_DOMAIN;
-  const clientId = process.env.AUTH0_CLIENT_ID;
-  const clientSecret = process.env.AUTH0_CLIENT_SECRET;
+export function mergeConfigFromEnvAndStore(stored?: StoredConfig | null): {
+  domain?: string;
+  clientId?: string;
+  clientSecret?: string;
+  audience?: string;
+  missing: string[];
+} {
+  const domain = process.env.AUTH0_DOMAIN || stored?.domain;
+  const clientId = process.env.AUTH0_CLIENT_ID || stored?.clientId;
+  const clientSecret = process.env.AUTH0_CLIENT_SECRET || stored?.clientSecret;
+  const audience = process.env.AUTH0_AUDIENCE || stored?.audience;
 
-  if (domain && clientId && clientSecret) {
-    log('config loaded from environment variables');
-    return { domain, clientId, clientSecret, audience: process.env.AUTH0_AUDIENCE };
-  }
-  return null;
+  const missing = [
+    !domain && 'AUTH0_DOMAIN',
+    !clientId && 'AUTH0_CLIENT_ID',
+    !clientSecret && 'AUTH0_CLIENT_SECRET',
+  ].filter(Boolean) as string[];
+
+  return { domain, clientId, clientSecret, audience, missing };
 }
 
 /**
- * Try to load Auth0 config from the credential store.
- * Returns null if no config is stored.
- */
-export async function loadConfigFromStore(store: CredentialStore): Promise<Auth0Config | null> {
-  const stored = await store.getConfig();
-  if (!stored) return null;
-  log('config loaded from credential store');
-  return {
-    domain: stored.domain,
-    clientId: stored.clientId,
-    clientSecret: stored.clientSecret,
-    audience: stored.audience,
-  };
-}
-
-/**
- * Load Auth0 config for non-login commands. Precedence:
- *  1. Environment variables
- *  2. Credential store
- *  3. Error with instructions to run login
+ * Load Auth0 config for non-login commands. Each field is resolved
+ * individually: env var first, then credential store. Errors if any
+ * required field is still missing.
  */
 export async function requireConfig(store: CredentialStore): Promise<Auth0Config> {
-  const fromEnv = loadConfigFromEnv();
-  if (fromEnv) return fromEnv;
+  const stored = await store.getConfig();
+  const { domain, clientId, clientSecret, audience, missing } = mergeConfigFromEnvAndStore(stored);
 
-  const fromStore = await loadConfigFromStore(store);
-  if (fromStore) return fromStore;
+  if (missing.length === 0) {
+    log('config resolved from env/store');
+    return { domain: domain!, clientId: clientId!, clientSecret: clientSecret!, audience: audience || undefined };
+  }
 
   throw new Error(
-    'Not configured. Run `auth0-tv login` first, or set AUTH0_DOMAIN, AUTH0_CLIENT_ID, and AUTH0_CLIENT_SECRET environment variables.'
+    `Not configured. Run \`auth0-tv login\` first, or set ${missing.join(', ')} environment variable${missing.length > 1 ? 's' : ''}.`
   );
 }
 

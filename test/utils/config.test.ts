@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { loadConfigFromEnv, loadConfigFromStore, requireConfig, resolveStorageBackend } from '../../src/utils/config.js';
+import { mergeConfigFromEnvAndStore, requireConfig, resolveStorageBackend } from '../../src/utils/config.js';
 import { CredentialStore } from '../../src/store/credential-store.js';
 
 // ── resolveStorageBackend ─────────────────────────────────────
@@ -11,11 +11,8 @@ describe('resolveStorageBackend', () => {
   const originalEnv = process.env.AUTH0_TV_STORAGE;
 
   afterEach(() => {
-    if (originalEnv === undefined) {
-      delete process.env.AUTH0_TV_STORAGE;
-    } else {
-      process.env.AUTH0_TV_STORAGE = originalEnv;
-    }
+    if (originalEnv === undefined) delete process.env.AUTH0_TV_STORAGE;
+    else process.env.AUTH0_TV_STORAGE = originalEnv;
   });
 
   it('defaults to keyring when no env var', () => {
@@ -34,9 +31,9 @@ describe('resolveStorageBackend', () => {
   });
 });
 
-// ── loadConfigFromEnv ─────────────────────────────────────────
+// ── mergeConfigFromEnvAndStore ────────────────────────────────
 
-describe('loadConfigFromEnv', () => {
+describe('mergeConfigFromEnvAndStore', () => {
   const saved: Record<string, string | undefined> = {};
 
   afterEach(() => {
@@ -54,84 +51,75 @@ describe('loadConfigFromEnv', () => {
     }
   }
 
-  it('returns config when all required env vars set', () => {
+  it('resolves all fields from env vars', () => {
     setEnv({
-      AUTH0_DOMAIN: 'test.auth0.com',
-      AUTH0_CLIENT_ID: 'cid',
-      AUTH0_CLIENT_SECRET: 'csec',
+      AUTH0_DOMAIN: 'env.auth0.com',
+      AUTH0_CLIENT_ID: 'env-cid',
+      AUTH0_CLIENT_SECRET: 'env-csec',
       AUTH0_AUDIENCE: 'https://api.example.com',
     });
 
-    const config = loadConfigFromEnv();
-    expect(config).toEqual({
-      domain: 'test.auth0.com',
-      clientId: 'cid',
-      clientSecret: 'csec',
-      audience: 'https://api.example.com',
-    });
+    const result = mergeConfigFromEnvAndStore(null);
+    expect(result.missing).toEqual([]);
+    expect(result.domain).toBe('env.auth0.com');
+    expect(result.audience).toBe('https://api.example.com');
   });
 
-  it('returns null when any required env var missing', () => {
+  it('resolves all fields from stored config', () => {
     setEnv({
-      AUTH0_DOMAIN: 'test.auth0.com',
+      AUTH0_DOMAIN: undefined,
       AUTH0_CLIENT_ID: undefined,
-      AUTH0_CLIENT_SECRET: 'csec',
+      AUTH0_CLIENT_SECRET: undefined,
     });
 
-    expect(loadConfigFromEnv()).toBeNull();
+    const result = mergeConfigFromEnvAndStore({
+      domain: 'store.auth0.com',
+      clientId: 'store-cid',
+      clientSecret: 'store-csec',
+    });
+    expect(result.missing).toEqual([]);
+    expect(result.domain).toBe('store.auth0.com');
   });
 
-  it('audience is optional', () => {
+  it('env var takes precedence over stored value per field', () => {
     setEnv({
-      AUTH0_DOMAIN: 'test.auth0.com',
+      AUTH0_DOMAIN: 'env.auth0.com',
+      AUTH0_CLIENT_ID: undefined,
+      AUTH0_CLIENT_SECRET: undefined,
+    });
+
+    const result = mergeConfigFromEnvAndStore({
+      domain: 'store.auth0.com',
+      clientId: 'store-cid',
+      clientSecret: 'store-csec',
+    });
+    expect(result.missing).toEqual([]);
+    expect(result.domain).toBe('env.auth0.com');
+    expect(result.clientId).toBe('store-cid');
+  });
+
+  it('reports missing fields', () => {
+    setEnv({
+      AUTH0_DOMAIN: undefined,
       AUTH0_CLIENT_ID: 'cid',
-      AUTH0_CLIENT_SECRET: 'csec',
+      AUTH0_CLIENT_SECRET: undefined,
+    });
+
+    const result = mergeConfigFromEnvAndStore(null);
+    expect(result.missing).toEqual(['AUTH0_DOMAIN', 'AUTH0_CLIENT_SECRET']);
+  });
+
+  it('audience is optional and never reported missing', () => {
+    setEnv({
+      AUTH0_DOMAIN: 'x',
+      AUTH0_CLIENT_ID: 'y',
+      AUTH0_CLIENT_SECRET: 'z',
       AUTH0_AUDIENCE: undefined,
     });
 
-    const config = loadConfigFromEnv();
-    expect(config).not.toBeNull();
-    expect(config?.audience).toBeUndefined();
-  });
-});
-
-// ── loadConfigFromStore ───────────────────────────────────────
-
-describe('loadConfigFromStore', () => {
-  let tempDir: string;
-  let store: CredentialStore;
-
-  afterEach(async () => {
-    if (tempDir) await rm(tempDir, { recursive: true, force: true });
-  });
-
-  async function makeStore() {
-    tempDir = await mkdtemp(join(tmpdir(), 'auth0-tv-cfg-'));
-    store = new CredentialStore(tempDir);
-    return store;
-  }
-
-  it('returns config from store', async () => {
-    const s = await makeStore();
-    await s.saveConfig({
-      domain: 'test.auth0.com',
-      clientId: 'cid',
-      clientSecret: 'csec',
-      audience: 'https://api.example.com',
-    });
-
-    const config = await loadConfigFromStore(s);
-    expect(config).toEqual({
-      domain: 'test.auth0.com',
-      clientId: 'cid',
-      clientSecret: 'csec',
-      audience: 'https://api.example.com',
-    });
-  });
-
-  it('returns null when store has no config', async () => {
-    const s = await makeStore();
-    expect(await loadConfigFromStore(s)).toBeNull();
+    const result = mergeConfigFromEnvAndStore(null);
+    expect(result.missing).toEqual([]);
+    expect(result.audience).toBeUndefined();
   });
 });
 
@@ -179,9 +167,9 @@ describe('requireConfig', () => {
     expect(config.domain).toBe('env.auth0.com');
   });
 
-  it('falls back to store when env vars missing', async () => {
+  it('mixes env vars and store per field', async () => {
     setEnv({
-      AUTH0_DOMAIN: undefined,
+      AUTH0_DOMAIN: 'env.auth0.com',
       AUTH0_CLIENT_ID: undefined,
       AUTH0_CLIENT_SECRET: undefined,
     });
@@ -193,10 +181,11 @@ describe('requireConfig', () => {
     });
 
     const config = await requireConfig(store);
-    expect(config.domain).toBe('store.auth0.com');
+    expect(config.domain).toBe('env.auth0.com');
+    expect(config.clientId).toBe('store-cid');
   });
 
-  it('throws when neither env vars nor store config available', async () => {
+  it('throws with specific missing fields', async () => {
     setEnv({
       AUTH0_DOMAIN: undefined,
       AUTH0_CLIENT_ID: undefined,
@@ -204,6 +193,6 @@ describe('requireConfig', () => {
     });
     const store = await makeStore();
 
-    await expect(requireConfig(store)).rejects.toThrow('Not configured');
+    await expect(requireConfig(store)).rejects.toThrow('AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET');
   });
 });

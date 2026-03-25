@@ -1,8 +1,7 @@
 import type { Command } from 'commander';
 import chalk from 'chalk';
-import { loadConfigFromEnv, loadConfigFromStore } from '../utils/config.js';
 import type { Auth0Config } from '../utils/config.js';
-import { promptForConfig } from '../utils/prompt.js';
+import { resolveConfigWithPrompts } from '../utils/prompt.js';
 import { output, outputError } from '../utils/output.js';
 import { EXIT_GENERAL, EXIT_NETWORK_ERROR } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
@@ -17,11 +16,20 @@ export function registerLoginCommand(program: Command) {
       try {
         const store = new CredentialStore();
 
-        // Resolve config: env vars → store → prompt
-        const config = await resolveLoginConfig(store, opts.reconfigure === true);
+        // Resolve config: each field checked against env var, then store, then prompt
+        const existing = opts.reconfigure ? null : await store.getConfig();
+        const config = await resolveConfigWithPrompts(existing);
 
-        const existing = await store.getAuth0Token();
-        if (existing) {
+        // Persist resolved config to the store (unless all fields came from env)
+        await store.saveConfig({
+          domain: config.domain,
+          clientId: config.clientId,
+          clientSecret: config.clientSecret,
+          audience: config.audience,
+        });
+
+        const existingToken = await store.getAuth0Token();
+        if (existingToken) {
           output(
             { status: 'already_logged_in' },
             `${chalk.yellow('Already logged in.')} Re-authenticating...`,
@@ -51,30 +59,4 @@ export function registerLoginCommand(program: Command) {
         process.exit(EXIT_GENERAL);
       }
     });
-}
-
-async function resolveLoginConfig(
-  store: CredentialStore,
-  reconfigure: boolean
-): Promise<Auth0Config> {
-  // 1. Env vars always win — skip prompts entirely
-  const fromEnv = loadConfigFromEnv();
-  if (fromEnv) return fromEnv;
-
-  // 2. Check store (unless --reconfigure)
-  if (!reconfigure) {
-    const fromStore = await loadConfigFromStore(store);
-    if (fromStore) return fromStore;
-  }
-
-  // 3. Prompt interactively and save
-  const prompted = await promptForConfig();
-  await store.saveConfig(prompted);
-
-  return {
-    domain: prompted.domain,
-    clientId: prompted.clientId,
-    clientSecret: prompted.clientSecret,
-    audience: prompted.audience,
-  };
 }

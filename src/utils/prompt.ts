@@ -1,15 +1,31 @@
 import { createInterface } from 'node:readline/promises';
 import type { StoredConfig } from '../store/types.js';
+import { mergeConfigFromEnvAndStore } from './config.js';
 
 /**
- * Interactively prompt the user for Auth0 configuration.
- * Writes prompts to stderr to keep stdout clean for JSON output.
+ * Resolve Auth0 config by merging env vars + stored values, then
+ * interactively prompting for any fields still missing.
  */
-export async function promptForConfig(): Promise<StoredConfig> {
+export async function resolveConfigWithPrompts(
+  existing?: StoredConfig | null
+): Promise<StoredConfig> {
+  const merged = mergeConfigFromEnvAndStore(existing);
+
+  // Everything resolved — no prompts needed
+  if (merged.missing.length === 0) {
+    return {
+      domain: cleanDomain(merged.domain!),
+      clientId: merged.clientId!,
+      clientSecret: merged.clientSecret!,
+      audience: merged.audience || undefined,
+    };
+  }
+
+  // Need to prompt — check TTY
   if (!process.stdin.isTTY) {
     throw new Error(
-      'Cannot prompt for configuration in non-interactive mode. ' +
-        'Set AUTH0_DOMAIN, AUTH0_CLIENT_ID, and AUTH0_CLIENT_SECRET environment variables.'
+      `Cannot prompt for configuration in non-interactive mode. ` +
+        `Set ${merged.missing.join(', ')} environment variable${merged.missing.length > 1 ? 's' : ''}.`
     );
   }
 
@@ -18,13 +34,14 @@ export async function promptForConfig(): Promise<StoredConfig> {
   try {
     process.stderr.write('\nAuth0 configuration required.\n\n');
 
-    const domain = await askRequired(rl, 'Auth0 domain (e.g. your-tenant.auth0.com): ');
-    const clientId = await askRequired(rl, 'Client ID: ');
-    const clientSecret = await askRequired(rl, 'Client secret: ');
-    const audience = (await rl.question('Audience (optional, press Enter to skip): ')).trim();
+    const domain = merged.domain || (await askRequired(rl, 'Auth0 domain (e.g. your-tenant.eu.auth0.com): '));
+    const clientId = merged.clientId || (await askRequired(rl, 'Client ID: '));
+    const clientSecret = merged.clientSecret || (await askRequired(rl, 'Client secret: '));
+    const audience =
+      merged.audience || (await rl.question('Audience (optional, press Enter to skip): ')).trim();
 
     return {
-      domain: domain.replace(/^https?:\/\//, '').replace(/\/+$/, ''),
+      domain: cleanDomain(domain),
       clientId,
       clientSecret,
       audience: audience || undefined,
@@ -32,6 +49,10 @@ export async function promptForConfig(): Promise<StoredConfig> {
   } finally {
     rl.close();
   }
+}
+
+function cleanDomain(domain: string): string {
+  return domain.replace(/^https?:\/\//, '').replace(/\/+$/, '');
 }
 
 async function askRequired(
