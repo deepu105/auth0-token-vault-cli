@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtemp, rm, readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { CredentialStore } from '../../src/store/credential-store.js';
+import type { CredentialBackend } from '../../src/store/backend.js';
 import type { Auth0Tokens, ConnectionToken } from '../../src/store/types.js';
 
 describe('CredentialStore', () => {
@@ -160,5 +161,105 @@ describe('CredentialStore', () => {
     const store2 = new CredentialStore(tempDir);
     expect(await store2.getAuth0Token()).toBe('at-123');
     expect(await store2.getConnectionToken('google-oauth2')).toBe('gmail-token-abc');
+  });
+});
+
+// ── CredentialStore with custom backend (keyring facade test) ───
+
+describe('CredentialStore with CredentialBackend', () => {
+  let mockBackend: CredentialBackend;
+  let store: CredentialStore;
+  let storage: Map<string, string>;
+
+  beforeEach(() => {
+    storage = new Map();
+
+    // In-memory backend simulating keyring behavior
+    mockBackend = {
+      async getAuth0Tokens() {
+        const raw = storage.get('AUTH0_TOKENS');
+        return raw ? JSON.parse(raw) : null;
+      },
+      async saveAuth0Tokens(tokens) {
+        storage.set('AUTH0_TOKENS', JSON.stringify(tokens));
+      },
+      async getConnectionToken(connection) {
+        const raw = storage.get(`CONNECTION:${connection}`);
+        return raw ? JSON.parse(raw) : null;
+      },
+      async saveConnectionToken(connection, token) {
+        storage.set(`CONNECTION:${connection}`, JSON.stringify(token));
+      },
+      async listConnections() {
+        return [...storage.keys()]
+          .filter((k) => k.startsWith('CONNECTION:'))
+          .map((k) => k.slice('CONNECTION:'.length));
+      },
+      async removeConnection(connection) {
+        return storage.delete(`CONNECTION:${connection}`);
+      },
+      async clear() {
+        storage.clear();
+      },
+    };
+
+    store = new CredentialStore(mockBackend);
+  });
+
+  it('full lifecycle through custom backend', async () => {
+    // Save Auth0 tokens
+    await store.saveAuth0Tokens({
+      accessToken: 'at-keyring',
+      refreshToken: 'rt-keyring',
+      expiresAt: Date.now() + 3600_000,
+    });
+
+    expect(await store.getAuth0Token()).toBe('at-keyring');
+    const full = await store.getAuth0Tokens();
+    expect(full?.refreshToken).toBe('rt-keyring');
+
+    // Save connection
+    await store.saveConnectionToken('google-oauth2', {
+      accessToken: 'gmail-keyring',
+      expiresAt: Date.now() + 3600_000,
+      scopes: ['https://www.googleapis.com/auth/gmail.modify'],
+    });
+
+    expect(await store.listConnections()).toEqual(['google-oauth2']);
+    expect(await store.getConnectionToken('google-oauth2')).toBe('gmail-keyring');
+
+    // Remove connection
+    expect(await store.removeConnection('google-oauth2')).toBe(true);
+    expect(await store.listConnections()).toEqual([]);
+
+    // Clear all
+    await store.clear();
+    expect(await store.getAuth0Token()).toBeNull();
+    expect(await store.getAuth0Tokens()).toBeNull();
+  });
+
+  it('expired tokens are filtered by facade, not backend', async () => {
+    await store.saveAuth0Tokens({
+      accessToken: 'expired',
+      expiresAt: Date.now() - 1000,
+    });
+
+    // Backend has the data
+    expect(await store.getAuth0Tokens()).toBeDefined();
+    // Facade filters expired
+    expect(await store.getAuth0Token()).toBeNull();
+  });
+
+  it('expired connection tokens are filtered by facade', async () => {
+    await store.saveConnectionToken('google-oauth2', {
+      accessToken: 'expired-gmail',
+      expiresAt: Date.now() - 1000,
+      scopes: [],
+    });
+
+    // getConnectionEntry returns raw data
+    expect(await store.getConnectionEntry('google-oauth2')).toBeDefined();
+    // getConnectionToken filters expired
+    expect(await store.getConnectionToken('google-oauth2')).toBeNull();
   });
 });
