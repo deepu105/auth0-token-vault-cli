@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { jwtDecode } from 'jwt-decode';
 import { output } from '../utils/output.js';
 import { CredentialStore } from '../store/credential-store.js';
+import { mergeConfigFromEnvAndStore } from '../utils/config.js';
 
 interface IdTokenClaims {
   sub?: string;
@@ -17,12 +18,18 @@ export function registerStatusCommand(program: Command) {
     .description('Show current user and connected services')
     .action(async (_opts, cmd: Command) => {
       const store = new CredentialStore();
+      const storedConfig = await store.getConfig();
+      const config = mergeConfigFromEnvAndStore(storedConfig);
       const auth0Tokens = await store.getAuth0Tokens();
 
       if (!auth0Tokens) {
         output(
-          { loggedIn: false },
-          chalk.yellow('Not logged in. Run `auth0-tv login` to authenticate.'),
+          { loggedIn: false, domain: config.domain ?? null, clientId: config.clientId ?? null },
+          [
+            chalk.yellow('Not logged in. Run `auth0-tv login` to authenticate.'),
+            ...(config.domain ? [`  Domain:   ${config.domain}`] : []),
+            ...(config.clientId ? [`  Client ID: ${config.clientId}`] : []),
+          ].join('\n'),
           cmd
         );
         return;
@@ -43,6 +50,8 @@ export function registerStatusCommand(program: Command) {
 
       const data = {
         loggedIn: !expired,
+        domain: config.domain ?? null,
+        clientId: config.clientId ?? null,
         user: {
           email: user.email ?? null,
           name: user.name ?? null,
@@ -55,6 +64,8 @@ export function registerStatusCommand(program: Command) {
       const lines = [
         chalk.bold('Auth0 Token Vault Status'),
         '',
+        `  Domain:   ${config.domain ?? 'n/a'}`,
+        `  Client ID: ${config.clientId ?? 'n/a'}`,
         `  User:    ${user.name ?? user.email ?? user.sub ?? 'unknown'}`,
         `  Email:   ${user.email ?? 'n/a'}`,
         `  Session: ${expired ? chalk.yellow('expired') : chalk.green('active')}`,
