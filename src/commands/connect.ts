@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import chalk from 'chalk';
-import { loadConfig } from '../utils/config.js';
+import { requireConfig } from '../utils/config.js';
 import { output, outputError } from '../utils/output.js';
 import { EXIT_AUTH_REQUIRED, EXIT_GENERAL, EXIT_INVALID_INPUT } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
@@ -40,8 +40,8 @@ export function registerConnectCommand(program: Command) {
       }
 
       try {
-        const config = await loadConfig();
         const store = new CredentialStore();
+        const config = await requireConfig(store);
 
         // Must be logged in first
         const auth0Token = await store.getAuth0Token();

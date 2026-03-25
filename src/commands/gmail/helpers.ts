@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
 import { createInterface } from 'node:readline/promises';
 import { readFile } from 'node:fs/promises';
-import { loadConfig } from '../../utils/config.js';
+import { requireConfig } from '../../utils/config.js';
 import { outputError } from '../../utils/output.js';
 import {
   EXIT_AUTH_REQUIRED,
@@ -20,8 +20,8 @@ const CONNECTION = 'google-oauth2';
  * Exits with appropriate codes if auth/authz fails.
  */
 export async function createGmailClient(cmd: Command): Promise<GmailClient> {
-  const config = await loadConfig();
   const store = new CredentialStore();
+  const config = await requireConfig(store);
 
   return new GmailClient(async () => {
     return exchangeForConnectionToken(config, store, CONNECTION);

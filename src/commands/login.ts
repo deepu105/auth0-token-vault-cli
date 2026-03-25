@@ -1,6 +1,8 @@
 import type { Command } from 'commander';
 import chalk from 'chalk';
-import { loadConfig } from '../utils/config.js';
+import { loadConfigFromEnv, loadConfigFromStore } from '../utils/config.js';
+import type { Auth0Config } from '../utils/config.js';
+import { promptForConfig } from '../utils/prompt.js';
 import { output, outputError } from '../utils/output.js';
 import { EXIT_GENERAL, EXIT_NETWORK_ERROR } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
@@ -10,10 +12,13 @@ export function registerLoginCommand(program: Command) {
   program
     .command('login')
     .description('Authenticate with Auth0 via browser-based PKCE flow')
-    .action(async (_opts, cmd: Command) => {
+    .option('--reconfigure', 'Re-prompt for Auth0 domain, client ID, and secret')
+    .action(async (opts, cmd: Command) => {
       try {
-        const config = await loadConfig();
         const store = new CredentialStore();
+
+        // Resolve config: env vars → store → prompt
+        const config = await resolveLoginConfig(store, opts.reconfigure === true);
 
         const existing = await store.getAuth0Token();
         if (existing) {
@@ -46,4 +51,30 @@ export function registerLoginCommand(program: Command) {
         process.exit(EXIT_GENERAL);
       }
     });
+}
+
+async function resolveLoginConfig(
+  store: CredentialStore,
+  reconfigure: boolean
+): Promise<Auth0Config> {
+  // 1. Env vars always win — skip prompts entirely
+  const fromEnv = loadConfigFromEnv();
+  if (fromEnv) return fromEnv;
+
+  // 2. Check store (unless --reconfigure)
+  if (!reconfigure) {
+    const fromStore = await loadConfigFromStore(store);
+    if (fromStore) return fromStore;
+  }
+
+  // 3. Prompt interactively and save
+  const prompted = await promptForConfig();
+  await store.saveConfig(prompted);
+
+  return {
+    domain: prompted.domain,
+    clientId: prompted.clientId,
+    clientSecret: prompted.clientSecret,
+    audience: prompted.audience,
+  };
 }

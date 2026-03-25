@@ -1,7 +1,6 @@
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
-import { homedir } from 'node:os';
 import { log } from './logger.js';
+import type { CredentialStore } from '../store/credential-store.js';
+import type { StoredConfig } from '../store/types.js';
 
 export type StorageBackend = 'keyring' | 'file';
 
@@ -10,19 +9,13 @@ export interface Auth0Config {
   clientId: string;
   clientSecret: string;
   audience?: string;
-  storage?: StorageBackend;
 }
 
-const CONFIG_DIR = join(homedir(), '.auth0-tv');
-const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
-
 /**
- * Load Auth0 configuration. Precedence:
- *  1. Environment variables (AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_AUDIENCE)
- *  2. Config file at ~/.auth0-tv/config.json
+ * Try to load Auth0 config from environment variables only.
+ * Returns null if any required variable is missing.
  */
-export async function loadConfig(): Promise<Auth0Config> {
-  // Try env vars first
+export function loadConfigFromEnv(): Auth0Config | null {
   const domain = process.env.AUTH0_DOMAIN;
   const clientId = process.env.AUTH0_CLIENT_ID;
   const clientSecret = process.env.AUTH0_CLIENT_SECRET;
@@ -31,42 +24,49 @@ export async function loadConfig(): Promise<Auth0Config> {
     log('config loaded from environment variables');
     return { domain, clientId, clientSecret, audience: process.env.AUTH0_AUDIENCE };
   }
+  return null;
+}
 
-  // Fall back to config file
-  try {
-    const raw = await readFile(CONFIG_FILE, 'utf-8');
-    const parsed = JSON.parse(raw) as Partial<Auth0Config>;
+/**
+ * Try to load Auth0 config from the credential store.
+ * Returns null if no config is stored.
+ */
+export async function loadConfigFromStore(store: CredentialStore): Promise<Auth0Config | null> {
+  const stored = await store.getConfig();
+  if (!stored) return null;
+  log('config loaded from credential store');
+  return {
+    domain: stored.domain,
+    clientId: stored.clientId,
+    clientSecret: stored.clientSecret,
+    audience: stored.audience,
+  };
+}
 
-    if (!parsed.domain || !parsed.clientId || !parsed.clientSecret) {
-      throw new Error('config.json must contain "domain", "clientId", and "clientSecret"');
-    }
+/**
+ * Load Auth0 config for non-login commands. Precedence:
+ *  1. Environment variables
+ *  2. Credential store
+ *  3. Error with instructions to run login
+ */
+export async function requireConfig(store: CredentialStore): Promise<Auth0Config> {
+  const fromEnv = loadConfigFromEnv();
+  if (fromEnv) return fromEnv;
 
-    log('config loaded from %s', CONFIG_FILE);
-    return {
-      domain: parsed.domain,
-      clientId: parsed.clientId,
-      clientSecret: parsed.clientSecret,
-      audience: parsed.audience,
-      storage: parsed.storage as StorageBackend | undefined,
-    };
-  } catch (err: unknown) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-      throw new Error(
-        'No Auth0 configuration found. Set AUTH0_DOMAIN, AUTH0_CLIENT_ID, and AUTH0_CLIENT_SECRET environment variables, ' +
-          `or create ${CONFIG_FILE} with { "domain": "...", "clientId": "...", "clientSecret": "..." }`
-      );
-    }
-    throw err;
-  }
+  const fromStore = await loadConfigFromStore(store);
+  if (fromStore) return fromStore;
+
+  throw new Error(
+    'Not configured. Run `auth0-tv login` first, or set AUTH0_DOMAIN, AUTH0_CLIENT_ID, and AUTH0_CLIENT_SECRET environment variables.'
+  );
 }
 
 /**
  * Resolve the credential storage backend. Precedence:
  *  1. AUTH0_TV_STORAGE env var
- *  2. `storage` field in config.json
- *  3. Default: 'keyring'
+ *  2. Default: 'keyring'
  */
-export function resolveStorageBackend(configStorage?: StorageBackend): StorageBackend {
+export function resolveStorageBackend(): StorageBackend {
   const envVal = process.env.AUTH0_TV_STORAGE;
   if (envVal) {
     if (envVal !== 'keyring' && envVal !== 'file') {
@@ -76,5 +76,5 @@ export function resolveStorageBackend(configStorage?: StorageBackend): StorageBa
     }
     return envVal;
   }
-  return configStorage ?? 'keyring';
+  return 'keyring';
 }
