@@ -203,3 +203,8 @@ Credentials are stored at `~/.auth0-tv/credentials.json` with restricted file pe
 ## License
 
 MIT
+
+# TODO
+
+- [ ] make gmail scopes granular
+- [ ] Add more services (Slack, Google Calendar, etc.)

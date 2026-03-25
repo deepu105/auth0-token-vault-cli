@@ -1,10 +1,10 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { createServer, type Server } from 'node:http';
+import { createServer } from 'node:http';
 import open from 'open';
 import { log } from '../utils/logger.js';
 import type { Auth0Config } from '../utils/config.js';
+import { bindServer, htmlPage } from './browser.js';
 
-const CALLBACK_PORTS = [18484, 18485, 18486, 18487, 18488, 18489];
 const TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 
 export interface PkceFlowOptions {
@@ -35,41 +35,8 @@ function generatePkce() {
   return { codeVerifier, codeChallenge };
 }
 
-/** Try to bind a server to the first available port in the range */
-async function bindServer(server: Server): Promise<number> {
-  for (const port of CALLBACK_PORTS) {
-    try {
-      await new Promise<void>((resolve, reject) => {
-        server.once('error', reject);
-        server.listen(port, '127.0.0.1', () => {
-          server.removeListener('error', reject);
-          resolve();
-        });
-      });
-      return port;
-    } catch {
-      log('port %d unavailable, trying next', port);
-    }
-  }
-  throw new Error(
-    `Could not bind callback server to any port in range ${CALLBACK_PORTS[0]}-${CALLBACK_PORTS[CALLBACK_PORTS.length - 1]}`
-  );
-}
-
-const SUCCESS_HTML = `<!DOCTYPE html>
-<html><head><title>Auth0 Token Vault CLI</title></head>
-<body style="font-family:system-ui;text-align:center;padding:2em">
-<h2>Authentication successful</h2>
-<p>You can close this tab and return to the terminal.</p>
-<script>window.close()</script>
-</body></html>`;
-
-const ERROR_HTML = (msg: string) => `<!DOCTYPE html>
-<html><head><title>Auth0 Token Vault CLI</title></head>
-<body style="font-family:system-ui;text-align:center;padding:2em">
-<h2>Authentication failed</h2>
-<p>${msg}</p>
-</body></html>`;
+const SUCCESS_HTML = htmlPage('Authentication successful', 'You can close this tab and return to the terminal.');
+const ERROR_HTML = (msg: string) => htmlPage('Authentication failed', msg);
 
 /**
  * Run a full Authorization Code + PKCE flow:
