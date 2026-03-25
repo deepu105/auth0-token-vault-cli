@@ -45,9 +45,26 @@ describe('exchangeForConnectionToken', () => {
     }
   });
 
+  it('throws EXIT_AUTH_REQUIRED when logged in but no refresh token', async () => {
+    await store.saveAuth0Tokens({
+      accessToken: 'valid-auth0-token',
+      expiresAt: Date.now() + 3600_000,
+    });
+
+    try {
+      await exchangeForConnectionToken(config, store, 'google-oauth2');
+      expect.fail('Should have thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(TokenExchangeError);
+      expect((err as TokenExchangeError).exitCode).toBe(3);
+      expect((err as TokenExchangeError).message).toContain('refresh token');
+    }
+  });
+
   it('exchanges Auth0 token for Gmail token and caches it', async () => {
     await store.saveAuth0Tokens({
       accessToken: 'valid-auth0-token',
+      refreshToken: 'valid-refresh-token',
       expiresAt: Date.now() + 3600_000,
     });
 
@@ -62,6 +79,7 @@ describe('exchangeForConnectionToken', () => {
   it('returns cached token without making a request', async () => {
     await store.saveAuth0Tokens({
       accessToken: 'valid-auth0-token',
+      refreshToken: 'valid-refresh-token',
       expiresAt: Date.now() + 3600_000,
     });
     await store.saveConnectionToken('google-oauth2', {
@@ -77,6 +95,7 @@ describe('exchangeForConnectionToken', () => {
   it('throws EXIT_AUTHZ_REQUIRED on access_denied', async () => {
     await store.saveAuth0Tokens({
       accessToken: 'valid-auth0-token',
+      refreshToken: 'valid-refresh-token',
       expiresAt: Date.now() + 3600_000,
     });
 
@@ -101,6 +120,7 @@ describe('exchangeForConnectionToken', () => {
   it('throws EXIT_AUTH_REQUIRED on expired_token', async () => {
     await store.saveAuth0Tokens({
       accessToken: 'valid-auth0-token',
+      refreshToken: 'valid-refresh-token',
       expiresAt: Date.now() + 3600_000,
     });
 
@@ -125,6 +145,7 @@ describe('exchangeForConnectionToken', () => {
   it('passes loginHint to the token exchange request', async () => {
     await store.saveAuth0Tokens({
       accessToken: 'valid-auth0-token',
+      refreshToken: 'valid-refresh-token',
       expiresAt: Date.now() + 3600_000,
     });
 
@@ -146,6 +167,7 @@ describe('exchangeForConnectionToken', () => {
   it('does not send login_hint when not provided', async () => {
     await store.saveAuth0Tokens({
       accessToken: 'valid-auth0-token',
+      refreshToken: 'valid-refresh-token',
       expiresAt: Date.now() + 3600_000,
     });
 
@@ -165,6 +187,7 @@ describe('exchangeForConnectionToken', () => {
   it('validates required scopes and throws when missing', async () => {
     await store.saveAuth0Tokens({
       accessToken: 'valid-auth0-token',
+      refreshToken: 'valid-refresh-token',
       expiresAt: Date.now() + 3600_000,
     });
 
@@ -195,6 +218,7 @@ describe('exchangeForConnectionToken', () => {
   it('passes scope validation when all required scopes are present', async () => {
     await store.saveAuth0Tokens({
       accessToken: 'valid-auth0-token',
+      refreshToken: 'valid-refresh-token',
       expiresAt: Date.now() + 3600_000,
     });
 

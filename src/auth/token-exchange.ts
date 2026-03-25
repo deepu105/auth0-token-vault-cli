@@ -1,11 +1,11 @@
 import { log } from '../utils/logger.js';
 import type { Auth0Config } from '../utils/config.js';
-import { CredentialStore } from '../store/credential-store.js';
+import type { CredentialStore } from '../store/credential-store.js';
 import { EXIT_AUTH_REQUIRED, EXIT_AUTHZ_REQUIRED, EXIT_SERVICE_ERROR } from '../utils/exit-codes.js';
 
 const GRANT_TYPE =
   'urn:auth0:params:oauth:grant-type:token-exchange:federated-connection-access-token';
-const SUBJECT_TOKEN_TYPE = 'urn:ietf:params:oauth:token-type:access_token';
+const SUBJECT_TOKEN_TYPE = 'urn:ietf:params:oauth:token-type:refresh_token';
 const REQUESTED_TOKEN_TYPE =
   'http://auth0.com/oauth/token-type/federated-connection-access-token';
 
@@ -50,11 +50,11 @@ export async function exchangeForConnectionToken(
     return cached;
   }
 
-  // Need Auth0 access token
-  const auth0Token = await store.getAuth0Token();
-  if (!auth0Token) {
+  // Need Auth0 refresh token for token exchange
+  const auth0Tokens = await store.getAuth0Tokens();
+  if (!auth0Tokens?.refreshToken) {
     throw new TokenExchangeError(
-      'Not logged in or session expired. Run `auth0-tv login` first.',
+      'Not logged in or session expired (no refresh token). Run `auth0-tv login` first.',
       EXIT_AUTH_REQUIRED
     );
   }
@@ -64,7 +64,7 @@ export async function exchangeForConnectionToken(
     client_id: config.clientId,
     client_secret: config.clientSecret,
     subject_token_type: SUBJECT_TOKEN_TYPE,
-    subject_token: auth0Token,
+    subject_token: auth0Tokens.refreshToken,
     connection,
     requested_token_type: REQUESTED_TOKEN_TYPE,
   };

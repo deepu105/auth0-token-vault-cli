@@ -158,9 +158,10 @@ describe('CLI credential flow', () => {
   });
 
   it('token exchange after connect persists connection for status/connections', async () => {
-    // Simulate: login saves Auth0 tokens
+    // Simulate: login saves Auth0 tokens (refresh token needed for exchange)
     await store.saveAuth0Tokens({
       accessToken: mockTokenResponse.access_token,
+      refreshToken: mockTokenResponse.refresh_token,
       expiresAt: Date.now() + 86400_000,
     });
 
