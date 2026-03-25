@@ -8,7 +8,9 @@ import { setupServer } from 'msw/node';
 import { handlers } from '../mocks/handlers.js';
 import { gmailHandlers } from '../mocks/gmail/handlers.js';
 import { CredentialStore } from '../../src/store/credential-store.js';
-import { mockTokenResponse } from '../mocks/handlers.js';
+import { exchangeForConnectionToken } from '../../src/auth/token-exchange.js';
+import { mockTokenResponse, mockExchangeResponse } from '../mocks/handlers.js';
+import type { Auth0Config } from '../../src/utils/config.js';
 
 const exec = promisify(execFile);
 const CLI = join(import.meta.dirname, '../../src/index.ts');
@@ -98,8 +100,19 @@ describe('CLI status/connections without credentials', () => {
 });
 
 describe('CLI credential flow', () => {
+  const msw = setupServer(...handlers);
   let tempDir: string;
   let store: CredentialStore;
+
+  const config: Auth0Config = {
+    domain: 'test.auth0.com',
+    clientId: 'test-client-id',
+    clientSecret: 'test-client-secret',
+  };
+
+  beforeAll(() => msw.listen({ onUnhandledRequest: 'bypass' }));
+  afterAll(() => msw.close());
+  afterEach(() => msw.resetHandlers());
 
   beforeEach(async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'auth0-tv-flow-'));
@@ -142,6 +155,28 @@ describe('CLI credential flow', () => {
     // 6. Clear all
     await store.clear();
     expect(await store.getAuth0Token()).toBeNull();
+  });
+
+  it('token exchange after connect persists connection for status/connections', async () => {
+    // Simulate: login saves Auth0 tokens
+    await store.saveAuth0Tokens({
+      accessToken: mockTokenResponse.access_token,
+      expiresAt: Date.now() + 86400_000,
+    });
+
+    // Before token exchange: no connections visible
+    expect(await store.listConnections()).toEqual([]);
+
+    // Simulate: connect triggers token exchange (this is the fix)
+    await exchangeForConnectionToken(config, store, 'google-oauth2');
+
+    // After token exchange: connection is visible
+    const connections = await store.listConnections();
+    expect(connections).toContain('google-oauth2');
+
+    // Connection token is cached and valid
+    const connToken = await store.getConnectionToken('google-oauth2');
+    expect(connToken).toBe(mockExchangeResponse.access_token);
   });
 
   it('expired tokens are not returned', async () => {

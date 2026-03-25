@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import open from 'open';
-import { log, logError } from '../utils/logger.js';
+import { log } from '../utils/logger.js';
 import type { Auth0Config } from '../utils/config.js';
 
 const CALLBACK_PORTS = [18484, 18485, 18486, 18487, 18488, 18489];

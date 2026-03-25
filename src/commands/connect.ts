@@ -5,6 +5,8 @@ import { output, outputError } from '../utils/output.js';
 import { EXIT_AUTH_REQUIRED, EXIT_GENERAL, EXIT_INVALID_INPUT } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
 import { runPkceFlow } from '../auth/pkce-flow.js';
+import { exchangeForConnectionToken } from '../auth/token-exchange.js';
+import { logError } from '../utils/logger.js';
 
 /** Map user-friendly service names to Auth0 connection identifiers and scopes */
 const SERVICE_MAP: Record<string, { connection: string; connectionScope: string }> = {
@@ -71,6 +73,17 @@ export function registerConnectCommand(program: Command) {
           idToken: tokens.id_token,
           expiresAt: Date.now() + tokens.expires_in * 1000,
         });
+
+        // Immediately exchange for a connection token to validate and persist the connection
+        try {
+          await exchangeForConnectionToken(config, store, mapping.connection);
+        } catch (exchangeErr) {
+          // Non-fatal: Auth0 tokens are saved, connection can be retried via Gmail commands
+          logError(
+            'Token exchange after connect failed (connection may still work)',
+            exchangeErr
+          );
+        }
 
         output(
           { status: 'connected', service: serviceLower, connection: mapping.connection },

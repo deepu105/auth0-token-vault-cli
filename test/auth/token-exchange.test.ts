@@ -121,4 +121,86 @@ describe('exchangeForConnectionToken', () => {
       expect((err as TokenExchangeError).exitCode).toBe(3);
     }
   });
+
+  it('passes loginHint to the token exchange request', async () => {
+    await store.saveAuth0Tokens({
+      accessToken: 'valid-auth0-token',
+      expiresAt: Date.now() + 3600_000,
+    });
+
+    let capturedBody: Record<string, string> | undefined;
+    msw.use(
+      http.post('https://test.auth0.com/oauth/token', async ({ request }) => {
+        capturedBody = (await request.json()) as Record<string, string>;
+        return HttpResponse.json(mockExchangeResponse);
+      })
+    );
+
+    await exchangeForConnectionToken(config, store, 'google-oauth2', {
+      loginHint: 'user@example.com',
+    });
+
+    expect(capturedBody?.login_hint).toBe('user@example.com');
+  });
+
+  it('does not send login_hint when not provided', async () => {
+    await store.saveAuth0Tokens({
+      accessToken: 'valid-auth0-token',
+      expiresAt: Date.now() + 3600_000,
+    });
+
+    let capturedBody: Record<string, string> | undefined;
+    msw.use(
+      http.post('https://test.auth0.com/oauth/token', async ({ request }) => {
+        capturedBody = (await request.json()) as Record<string, string>;
+        return HttpResponse.json(mockExchangeResponse);
+      })
+    );
+
+    await exchangeForConnectionToken(config, store, 'google-oauth2');
+    expect(capturedBody).toBeDefined();
+    expect('login_hint' in capturedBody!).toBe(false);
+  });
+
+  it('validates required scopes and throws when missing', async () => {
+    await store.saveAuth0Tokens({
+      accessToken: 'valid-auth0-token',
+      expiresAt: Date.now() + 3600_000,
+    });
+
+    msw.use(
+      http.post('https://test.auth0.com/oauth/token', () =>
+        HttpResponse.json({
+          ...mockExchangeResponse,
+          scope: 'https://www.googleapis.com/auth/gmail.readonly',
+        })
+      )
+    );
+
+    try {
+      await exchangeForConnectionToken(config, store, 'google-oauth2', {
+        requiredScopes: [
+          'https://www.googleapis.com/auth/gmail.readonly',
+          'https://www.googleapis.com/auth/gmail.send',
+        ],
+      });
+      expect.fail('Should have thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(TokenExchangeError);
+      expect((err as TokenExchangeError).exitCode).toBe(4);
+      expect((err as TokenExchangeError).message).toContain('gmail.send');
+    }
+  });
+
+  it('passes scope validation when all required scopes are present', async () => {
+    await store.saveAuth0Tokens({
+      accessToken: 'valid-auth0-token',
+      expiresAt: Date.now() + 3600_000,
+    });
+
+    const token = await exchangeForConnectionToken(config, store, 'google-oauth2', {
+      requiredScopes: ['https://www.googleapis.com/auth/gmail.modify'],
+    });
+    expect(token).toBe(mockExchangeResponse.access_token);
+  });
 });

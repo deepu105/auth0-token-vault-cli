@@ -26,6 +26,13 @@ export class TokenExchangeError extends Error {
   }
 }
 
+export interface ExchangeOptions {
+  /** Optional login hint for matching user across systems. */
+  loginHint?: string;
+  /** Scopes to validate on the returned token. If any are missing, throws EXIT_AUTHZ_REQUIRED. */
+  requiredScopes?: string[];
+}
+
 /**
  * Exchange an Auth0 access token for a federated connection access token
  * (e.g. Gmail). Caches the result in the credential store.
@@ -33,7 +40,8 @@ export class TokenExchangeError extends Error {
 export async function exchangeForConnectionToken(
   config: Auth0Config,
   store: CredentialStore,
-  connection: string
+  connection: string,
+  options?: ExchangeOptions
 ): Promise<string> {
   // Check cache first
   const cached = await store.getConnectionToken(connection);
@@ -51,7 +59,7 @@ export async function exchangeForConnectionToken(
     );
   }
 
-  const body = {
+  const body: Record<string, string> = {
     grant_type: GRANT_TYPE,
     client_id: config.clientId,
     client_secret: config.clientSecret,
@@ -60,6 +68,10 @@ export async function exchangeForConnectionToken(
     connection,
     requested_token_type: REQUESTED_TOKEN_TYPE,
   };
+
+  if (options?.loginHint) {
+    body.login_hint = options.loginHint;
+  }
 
   log('exchanging token for connection %s', connection);
 
@@ -94,6 +106,18 @@ export async function exchangeForConnectionToken(
   }
 
   const data = (await res.json()) as ExchangeResponse;
+
+  // Validate required scopes if specified
+  if (options?.requiredScopes?.length) {
+    const grantedScopes = data.scope ? data.scope.split(' ') : [];
+    const missing = options.requiredScopes.filter((s) => !grantedScopes.includes(s));
+    if (missing.length > 0) {
+      throw new TokenExchangeError(
+        `Insufficient scopes. Missing: ${missing.join(', ')}. Run \`auth0-tv connect ${connection === 'google-oauth2' ? 'gmail' : connection}\` to grant additional permissions.`,
+        EXIT_AUTHZ_REQUIRED
+      );
+    }
+  }
 
   // Cache with TTL
   await store.saveConnectionToken(connection, {
