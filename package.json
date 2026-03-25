@@ -44,6 +44,7 @@
     "debug": "^4.4.0",
     "googleapis": "^144.0.0",
     "jwt-decode": "^4.0.0",
+    "keytar": "^7.9.0",
     "open": "^10.1.0"
   },
   "devDependencies": {
