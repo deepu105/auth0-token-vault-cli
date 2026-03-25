@@ -75,10 +75,11 @@ export function registerConnectCommand(program: Command) {
         });
 
         // Immediately exchange for a connection token to validate and persist the connection
+        let exchangeFailed = false;
         try {
           await exchangeForConnectionToken(config, store, mapping.connection);
         } catch (exchangeErr) {
-          // Non-fatal: Auth0 tokens are saved, connection can be retried via Gmail commands
+          exchangeFailed = true;
           logError(
             'Token exchange after connect failed (connection may still work)',
             exchangeErr
@@ -91,11 +92,13 @@ export function registerConnectCommand(program: Command) {
           );
         }
 
-        output(
-          { status: 'connected', service: serviceLower, connection: mapping.connection },
-          chalk.green(`Successfully connected ${serviceLower}!`),
-          cmd
-        );
+        if (!exchangeFailed) {
+          output(
+            { status: 'connected', service: serviceLower, connection: mapping.connection },
+            chalk.green(`Successfully connected ${serviceLower}!`),
+            cmd
+          );
+        }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         outputError({ code: 'connect_failed', message }, cmd);
