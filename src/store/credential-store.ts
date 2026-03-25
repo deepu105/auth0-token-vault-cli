@@ -2,8 +2,10 @@ import { readFile, writeFile, mkdir, unlink, chmod } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { log } from '../utils/logger.js';
+import { resolveStorageBackend } from '../utils/config.js';
 import type { Auth0Tokens, ConnectionToken, CredentialData } from './types.js';
 import type { CredentialBackend } from './backend.js';
+import { KeyringBackend } from './keyring-backend.js';
 
 const DEFAULT_DIR = join(homedir(), '.auth0-tv');
 const CREDENTIALS_FILE = 'credentials.json';
@@ -93,10 +95,19 @@ export class CredentialStore {
   constructor(dir?: string);
   constructor(backend: CredentialBackend);
   constructor(dirOrBackend?: string | CredentialBackend) {
-    if (typeof dirOrBackend === 'string' || dirOrBackend === undefined) {
-      this.backend = new FileBackend(dirOrBackend ?? DEFAULT_DIR);
-    } else {
+    if (dirOrBackend !== undefined && typeof dirOrBackend !== 'string') {
       this.backend = dirOrBackend;
+    } else if (typeof dirOrBackend === 'string') {
+      // Explicit dir means file backend (used in tests)
+      this.backend = new FileBackend(dirOrBackend);
+    } else {
+      // No argument — resolve from config/env
+      const storage = resolveStorageBackend();
+      if (storage === 'keyring') {
+        this.backend = new KeyringBackend();
+      } else {
+        this.backend = new FileBackend(DEFAULT_DIR);
+      }
     }
   }
 

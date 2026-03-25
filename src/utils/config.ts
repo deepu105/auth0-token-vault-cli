@@ -3,11 +3,14 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { log } from './logger.js';
 
+export type StorageBackend = 'keyring' | 'file';
+
 export interface Auth0Config {
   domain: string;
   clientId: string;
   clientSecret: string;
   audience?: string;
+  storage?: StorageBackend;
 }
 
 const CONFIG_DIR = join(homedir(), '.auth0-tv');
@@ -44,6 +47,7 @@ export async function loadConfig(): Promise<Auth0Config> {
       clientId: parsed.clientId,
       clientSecret: parsed.clientSecret,
       audience: parsed.audience,
+      storage: parsed.storage as StorageBackend | undefined,
     };
   } catch (err: unknown) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -54,4 +58,23 @@ export async function loadConfig(): Promise<Auth0Config> {
     }
     throw err;
   }
+}
+
+/**
+ * Resolve the credential storage backend. Precedence:
+ *  1. AUTH0_TV_STORAGE env var
+ *  2. `storage` field in config.json
+ *  3. Default: 'keyring'
+ */
+export function resolveStorageBackend(configStorage?: StorageBackend): StorageBackend {
+  const envVal = process.env.AUTH0_TV_STORAGE;
+  if (envVal) {
+    if (envVal !== 'keyring' && envVal !== 'file') {
+      throw new Error(
+        `Invalid AUTH0_TV_STORAGE value "${envVal}". Must be "keyring" or "file".`
+      );
+    }
+    return envVal;
+  }
+  return configStorage ?? 'keyring';
 }
