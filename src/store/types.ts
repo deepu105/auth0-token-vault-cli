@@ -13,7 +13,15 @@ export interface ConnectionToken {
   scopes: string[];
 }
 
+export interface StoredConfig {
+  domain: string;
+  clientId: string;
+  clientSecret: string;
+  audience?: string;
+}
+
 export interface CredentialData {
+  config?: StoredConfig;
   auth0?: Auth0Tokens;
   connections: Record<string, ConnectionToken>;
 }

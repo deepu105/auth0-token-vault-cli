@@ -151,6 +151,44 @@ describe('CredentialStore', () => {
     expect(token).toBeNull();
   });
 
+  // ── Config storage ───────────────────────────────────────────
+
+  it('saves and retrieves config', async () => {
+    await store.saveConfig({
+      domain: 'test.auth0.com',
+      clientId: 'cid',
+      clientSecret: 'csec',
+      audience: 'https://api.example.com',
+    });
+
+    const config = await store.getConfig();
+    expect(config?.domain).toBe('test.auth0.com');
+    expect(config?.clientId).toBe('cid');
+    expect(config?.clientSecret).toBe('csec');
+    expect(config?.audience).toBe('https://api.example.com');
+  });
+
+  it('returns null when no config is stored', async () => {
+    expect(await store.getConfig()).toBeNull();
+  });
+
+  it('config survives clear()', async () => {
+    await store.saveConfig({
+      domain: 'test.auth0.com',
+      clientId: 'cid',
+      clientSecret: 'csec',
+    });
+    await store.saveAuth0Tokens(validAuth0Tokens);
+
+    await store.clear();
+
+    // Tokens are gone
+    expect(await store.getAuth0Token()).toBeNull();
+    // Config is preserved
+    const config = await store.getConfig();
+    expect(config?.domain).toBe('test.auth0.com');
+  });
+
   // ── Persistence round-trip ────────────────────────────────────
 
   it('persists data that survives a new store instance', async () => {
@@ -176,6 +214,13 @@ describe('CredentialStore with CredentialBackend', () => {
 
     // In-memory backend simulating keyring behavior
     mockBackend = {
+      async getConfig() {
+        const raw = storage.get('AUTH0_CONFIG');
+        return raw ? JSON.parse(raw) : null;
+      },
+      async saveConfig(config) {
+        storage.set('AUTH0_CONFIG', JSON.stringify(config));
+      },
       async getAuth0Tokens() {
         const raw = storage.get('AUTH0_TOKENS');
         return raw ? JSON.parse(raw) : null;
@@ -199,7 +244,10 @@ describe('CredentialStore with CredentialBackend', () => {
         return storage.delete(`CONNECTION:${connection}`);
       },
       async clear() {
+        // Preserve config, clear everything else
+        const config = storage.get('AUTH0_CONFIG');
         storage.clear();
+        if (config) storage.set('AUTH0_CONFIG', config);
       },
     };
 
@@ -236,6 +284,24 @@ describe('CredentialStore with CredentialBackend', () => {
     await store.clear();
     expect(await store.getAuth0Token()).toBeNull();
     expect(await store.getAuth0Tokens()).toBeNull();
+  });
+
+  it('config survives clear() through custom backend', async () => {
+    await store.saveConfig({
+      domain: 'test.auth0.com',
+      clientId: 'cid',
+      clientSecret: 'csec',
+    });
+    await store.saveAuth0Tokens({
+      accessToken: 'at-keyring',
+      expiresAt: Date.now() + 3600_000,
+    });
+
+    await store.clear();
+
+    expect(await store.getAuth0Token()).toBeNull();
+    const config = await store.getConfig();
+    expect(config?.domain).toBe('test.auth0.com');
   });
 
   it('expired tokens are filtered by facade, not backend', async () => {

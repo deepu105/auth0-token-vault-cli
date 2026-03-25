@@ -39,6 +39,57 @@ describe('KeyringBackend', () => {
     scopes: ['https://www.googleapis.com/auth/gmail.modify'],
   };
 
+  // ── Config ─────────────────────────────────────────────────────
+
+  const validConfig = {
+    domain: 'test.auth0.com',
+    clientId: 'cid',
+    clientSecret: 'csec',
+    audience: 'https://api.example.com',
+  };
+
+  it('saves and retrieves config', async () => {
+    vi.mocked(keytar.setPassword).mockResolvedValue();
+    vi.mocked(keytar.getPassword).mockResolvedValue(JSON.stringify(validConfig));
+
+    await backend.saveConfig(validConfig);
+    expect(keytar.setPassword).toHaveBeenCalledWith(
+      SERVICE,
+      'AUTH0_CONFIG',
+      JSON.stringify(validConfig)
+    );
+
+    const result = await backend.getConfig();
+    expect(result).toEqual(validConfig);
+  });
+
+  it('returns null when no config exists', async () => {
+    vi.mocked(keytar.getPassword).mockResolvedValue(null);
+    expect(await backend.getConfig()).toBeNull();
+  });
+
+  it('returns null for corrupt config', async () => {
+    vi.mocked(keytar.getPassword).mockResolvedValue('not-json');
+    expect(await backend.getConfig()).toBeNull();
+  });
+
+  it('clear() preserves config entry', async () => {
+    vi.mocked(keytar.findCredentials).mockResolvedValue([
+      { account: 'AUTH0_CONFIG', password: JSON.stringify(validConfig) },
+      { account: 'AUTH0_TOKENS', password: '{}' },
+      { account: 'CONNECTION:google-oauth2', password: '{}' },
+    ]);
+    vi.mocked(keytar.deletePassword).mockResolvedValue(true);
+
+    await backend.clear();
+
+    // Should delete tokens and connections but NOT config
+    expect(keytar.deletePassword).toHaveBeenCalledTimes(2);
+    expect(keytar.deletePassword).toHaveBeenCalledWith(SERVICE, 'AUTH0_TOKENS');
+    expect(keytar.deletePassword).toHaveBeenCalledWith(SERVICE, 'CONNECTION:google-oauth2');
+    expect(keytar.deletePassword).not.toHaveBeenCalledWith(SERVICE, 'AUTH0_CONFIG');
+  });
+
   // ── Auth0 tokens ──────────────────────────────────────────────
 
   it('saves and retrieves Auth0 tokens', async () => {

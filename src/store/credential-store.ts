@@ -1,9 +1,9 @@
-import { readFile, writeFile, mkdir, unlink, chmod } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { log } from '../utils/logger.js';
 import { resolveStorageBackend } from '../utils/config.js';
-import type { Auth0Tokens, ConnectionToken, CredentialData } from './types.js';
+import type { Auth0Tokens, ConnectionToken, CredentialData, StoredConfig } from './types.js';
 import type { CredentialBackend } from './backend.js';
 import { KeyringBackend } from './keyring-backend.js';
 
@@ -22,6 +22,17 @@ export class FileBackend implements CredentialBackend {
   constructor(dir: string) {
     this.dir = dir;
     this.filePath = join(this.dir, CREDENTIALS_FILE);
+  }
+
+  async getConfig(): Promise<StoredConfig | null> {
+    const data = await this.load();
+    return data.config ?? null;
+  }
+
+  async saveConfig(config: StoredConfig): Promise<void> {
+    const data = await this.load();
+    data.config = config;
+    await this.persist(data);
   }
 
   async getAuth0Tokens(): Promise<Auth0Tokens | null> {
@@ -60,10 +71,16 @@ export class FileBackend implements CredentialBackend {
   }
 
   async clear(): Promise<void> {
-    try {
-      await unlink(this.filePath);
-    } catch (err: unknown) {
-      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
+    const data = await this.load();
+    if (data.config) {
+      // Preserve config, wipe tokens and connections
+      await this.persist({ config: data.config, connections: {} });
+    } else {
+      try {
+        await unlink(this.filePath);
+      } catch (err: unknown) {
+        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
+      }
     }
   }
 
@@ -109,6 +126,17 @@ export class CredentialStore {
         this.backend = new FileBackend(DEFAULT_DIR);
       }
     }
+  }
+
+  // ── Config ─────────────────────────────────────────────────────
+
+  async getConfig(): Promise<StoredConfig | null> {
+    return this.backend.getConfig();
+  }
+
+  async saveConfig(config: StoredConfig): Promise<void> {
+    await this.backend.saveConfig(config);
+    log('auth0 config saved');
   }
 
   // ── Read ──────────────────────────────────────────────────────
