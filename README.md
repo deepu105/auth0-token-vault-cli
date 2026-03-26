@@ -102,12 +102,15 @@ Set environment variables or create `~/.auth0-tv/config.json`:
 
 ### Environment Variables
 
-| Variable              | Description                     |
-| --------------------- | ------------------------------- |
-| `AUTH0_DOMAIN`        | Auth0 tenant domain             |
-| `AUTH0_CLIENT_ID`     | Auth0 application client ID     |
-| `AUTH0_CLIENT_SECRET` | Auth0 application client secret |
-| `AUTH0_AUDIENCE`      | API audience (optional)         |
+| Variable              | Description                                          |
+| --------------------- | ---------------------------------------------------- |
+| `AUTH0_DOMAIN`        | Auth0 tenant domain                                  |
+| `AUTH0_CLIENT_ID`     | Auth0 application client ID                          |
+| `AUTH0_CLIENT_SECRET` | Auth0 application client secret                      |
+| `AUTH0_AUDIENCE`      | API audience (optional)                              |
+| `AUTH0_TV_OUTPUT`     | Set to `json` to auto-enable JSON output for agents  |
+| `AUTH0_TV_STORAGE`    | Credential backend: `keyring` (default) or `file`    |
+| `AUTH0_TV_BROWSER`    | Browser to open for auth flows (e.g. `firefox`)      |
 
 ## Commands
 
@@ -142,6 +145,27 @@ auth0-tv gmail draft delete <draftId>
 ## Agent Integration
 
 The CLI is designed as a skill for AI agents (Claude Code, OpenClaw, etc.).
+
+### Agent Skills
+
+The CLI ships with an [Agent Skills](https://agentskills.io) manifest that enables automatic discovery in supported agent frameworks.
+
+**In-project discovery (automatic):** When working in this repo, agents discover the skill automatically:
+- **OpenClaw:** via `skills/auth0-token-vault/SKILL.md`
+- **Claude Code:** via `.claude/skills/auth0-token-vault/SKILL.md` (symlink)
+
+**Global installation:** For use outside this repo, install `auth0-tv` globally and copy the skill:
+```bash
+npm install -g @auth0/token-vault-cli
+
+# Claude Code
+cp -r skills/auth0-token-vault ~/.claude/skills/
+
+# OpenClaw
+cp -r skills/auth0-token-vault ~/.openclaw/skills/
+```
+
+> **Note:** Global `npm install -g` is required for agent use. Agents cannot discover `auth0-tv` when run via `npx` or from a local `node_modules/` install.
 
 ### JSON Mode
 
@@ -204,10 +228,11 @@ Credentials are stored at `~/.auth0-tv/credentials.json` with restricted file pe
 
 MIT
 
-# TODO
+# TODO/Gaps
 
 - [ ] How is token refresh handled on auth0 token expiry? Do we proactively refresh tokens before expiry or just rely on error handling and re-authentication?
-- [ ] Add skill.md for agent integration instructions and best practices
 - [ ] Add more services (Slack, Google Calendar, etc.)
 - [ ] Use access_token instead of refresh token. Configurable.
 - [ ] MCP wrapper?
+- [ ] keytar replacement? Maybe with @napi-rs/keyring
+- [ ] lockfile for filestore?

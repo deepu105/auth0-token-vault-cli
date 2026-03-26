@@ -1,7 +1,9 @@
 import type { Command } from 'commander';
 
 /**
- * Resolve the --json flag from the root command's options.
+ * Resolve JSON output mode. Precedence:
+ *  1. --json CLI flag
+ *  2. AUTH0_TV_OUTPUT=json env var
  */
 function isJsonMode(cmd: Command): boolean {
   // Walk up to the root program to read global opts
@@ -9,7 +11,7 @@ function isJsonMode(cmd: Command): boolean {
   while (root.parent) {
     root = root.parent;
   }
-  return root.opts().json === true;
+  return root.opts().json === true || process.env.AUTH0_TV_OUTPUT === 'json';
 }
 
 /**

@@ -48,3 +48,8 @@ Tests use Vitest with MSW (Mock Service Worker) for HTTP mocking. Test setup (`t
 - ESM throughout (`"type": "module"` in package.json) — all local imports use `.js` extensions
 - Debug logging via the `debug` package (wrapped in `src/utils/logger.ts`)
 - The `output()` helper must be used for all command output to maintain dual-mode (human/JSON) support
+- `AUTH0_TV_OUTPUT=json` env var auto-enables JSON mode (alternative to `--json` flag)
+
+## Agent Skill
+
+An [Agent Skills](https://agentskills.io) manifest is at `skills/auth0-token-vault/SKILL.md` (with a symlink at `.claude/skills/` for Claude Code). It defines how agents discover and invoke `auth0-tv`, including exit code recovery, destructive action patterns, and the full command reference in `references/commands.md`.
