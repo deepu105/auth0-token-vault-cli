@@ -44,25 +44,25 @@ Requires Node.js 18+.
 
 ## Quick Start
 
-# 1. Login
+### 1. Login
 
 ```bash
 auth0-tv login
 ```
 
-# 2. Connect Gmail
+### 2. Connect Gmail
 
 ```bash
 auth0-tv connect gmail
 ```
 
-# 3. Search emails
+### 3. Search emails
 
 ```bash
 auth0-tv gmail search "from:boss@company.com"
 ```
 
-# 4. Read an email
+### 4. Read an email
 
 ```bash
 auth0-tv gmail read <messageId>
