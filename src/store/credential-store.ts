@@ -10,8 +10,8 @@ import { KeyringBackend } from './keyring-backend.js';
 const DEFAULT_DIR = join(homedir(), '.auth0-tv');
 const CREDENTIALS_FILE = 'credentials.json';
 
-/** Proactive expiry buffer — treat tokens as expired 5 minutes early */
-const EXPIRY_BUFFER_MS = 5 * 60 * 1000;
+/** Proactive expiry buffer — treat tokens as expired 2 minutes early */
+export const EXPIRY_BUFFER_MS = 2 * 60 * 1000;
 
 // ── FileBackend ──────────────────────────────────────────────────
 

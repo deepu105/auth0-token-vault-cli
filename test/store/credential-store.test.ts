@@ -58,10 +58,10 @@ describe('CredentialStore', () => {
     expect(await store.getAuth0Token()).toBeNull();
   });
 
-  it('returns null when token is within the 5-minute expiry buffer', async () => {
+  it('returns null when token is within the 2-minute expiry buffer', async () => {
     const almostExpired: Auth0Tokens = {
       accessToken: 'at-soon',
-      expiresAt: Date.now() + 4 * 60 * 1000, // 4 min from now (within 5-min buffer)
+      expiresAt: Date.now() + 1 * 60 * 1000, // 1 min from now (within 2-min buffer)
     };
     await store.saveAuth0Tokens(almostExpired);
     expect(await store.getAuth0Token()).toBeNull();

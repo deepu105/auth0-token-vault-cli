@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
 import chalk from 'chalk';
 import { output } from '../utils/output.js';
-import { CredentialStore } from '../store/credential-store.js';
+import { CredentialStore, EXPIRY_BUFFER_MS } from '../store/credential-store.js';
 
 const CONNECTION_TO_SERVICE: Record<string, string> = {
   'google-oauth2': 'gmail',
@@ -27,7 +27,7 @@ export function registerConnectionsCommand(program: Command) {
       const entries = await Promise.all(
         connections.map(async (conn) => {
           const entry = await store.getConnectionEntry(conn);
-          const expired = entry ? Date.now() >= entry.expiresAt : true;
+          const expired = entry ? Date.now() >= entry.expiresAt - EXPIRY_BUFFER_MS : true;
           return {
             connection: conn,
             service: CONNECTION_TO_SERVICE[conn] ?? conn,
