@@ -254,4 +254,31 @@ describe('exchangeForConnectionToken', () => {
     });
     expect(token).toBe(mockExchangeResponse.access_token);
   });
+
+  it('throws EXIT_AUTHZ_REQUIRED when response has no scope field and requiredScopes are set', async () => {
+    await store.saveAuth0Tokens({
+      accessToken: 'valid-auth0-token',
+      refreshToken: 'valid-refresh-token',
+      expiresAt: Date.now() + 3600_000,
+    });
+
+    msw.use(
+      http.post('https://test.auth0.com/oauth/token', () => {
+        const { scope: _, ...noScope } = mockExchangeResponse;
+        return HttpResponse.json(noScope);
+      })
+    );
+
+    try {
+      await exchangeForConnectionToken(config, store, 'google-oauth2', {
+        requiredScopes: ['https://www.googleapis.com/auth/gmail.modify'],
+      });
+      expect.fail('Should have thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(TokenExchangeError);
+      expect((err as TokenExchangeError).exitCode).toBe(4);
+      expect((err as TokenExchangeError).message).toContain('Insufficient scopes');
+      expect((err as TokenExchangeError).message).toContain('gmail.modify');
+    }
+  });
 });
