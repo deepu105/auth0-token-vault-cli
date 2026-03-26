@@ -208,3 +208,5 @@ MIT
 
 - [ ] make gmail scopes granular
 - [ ] Add more services (Slack, Google Calendar, etc.)
+- [ ] show credential location in status
+- [ ] browser selection for auth flow via flags or env var (e.g., `AUTH0_TV_BROWSER=firefox`)
