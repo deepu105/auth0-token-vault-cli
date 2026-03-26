@@ -6,8 +6,9 @@ import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import { CredentialStore } from '../../src/store/credential-store.js';
 import { exchangeForConnectionToken, TokenExchangeError } from '../../src/auth/token-exchange.js';
+import { clearOidcConfigCache } from '../../src/auth/oidc-config.js';
 import type { Auth0Config } from '../../src/utils/config.js';
-import { handlers, mockExchangeResponse } from '../mocks/handlers.js';
+import { handlers, mockExchangeResponse, parseBody } from '../mocks/handlers.js';
 
 const config: Auth0Config = {
   domain: 'test.auth0.com',
@@ -22,7 +23,10 @@ describe('exchangeForConnectionToken', () => {
 
   beforeAll(() => msw.listen({ onUnhandledRequest: 'bypass' }));
   afterAll(() => msw.close());
-  afterEach(() => msw.resetHandlers());
+  afterEach(() => {
+    msw.resetHandlers();
+    clearOidcConfigCache();
+  });
 
   beforeEach(async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'auth0-tv-exchange-'));
@@ -182,7 +186,7 @@ describe('exchangeForConnectionToken', () => {
     let capturedBody: Record<string, string> | undefined;
     msw.use(
       http.post('https://test.auth0.com/oauth/token', async ({ request }) => {
-        capturedBody = (await request.json()) as Record<string, string>;
+        capturedBody = await parseBody(request);
         return HttpResponse.json(mockExchangeResponse);
       })
     );
@@ -204,7 +208,7 @@ describe('exchangeForConnectionToken', () => {
     let capturedBody: Record<string, string> | undefined;
     msw.use(
       http.post('https://test.auth0.com/oauth/token', async ({ request }) => {
-        capturedBody = (await request.json()) as Record<string, string>;
+        capturedBody = await parseBody(request);
         return HttpResponse.json(mockExchangeResponse);
       })
     );

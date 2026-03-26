@@ -40,7 +40,7 @@ Access third-party [services](https://auth0.com/ai/docs/integrations/overview) (
 npm install -g auth0-token-vault-cli
 ```
 
-Requires Node.js 18+.
+Requires Node.js 20+.
 
 ## Quick Start
 

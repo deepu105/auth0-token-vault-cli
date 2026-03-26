@@ -429,7 +429,7 @@ AI agents need to access third-party services on behalf of authenticated users. 
 
 ## Risks & Dependencies
 
-- **Auth0 Token Vault public client support** — The plan assumes access token exchange works for public clients (no client_secret). If this doesn't work, the architecture needs a confidential client with a locally-stored secret. _Mitigation:_ Validate this in Unit 3 before building the Gmail layer
+- **Auth0 Token Vault public client support** — The plan assumes access token exchange works for public clients (no client_secret). If this doesn't work, the architecture needs a confidential client with a locally-stored secret. Mitigation: Validate this in Unit 3 before building the Gmail layer
 - **Auth0 callback URL registration** — Must pre-register `http://127.0.0.1:18484/callback` through `:18489/callback` in the Auth0 app. _Mitigation:_ Document in README setup guide
 - **googleapis dependency size** — The full `googleapis` package is large. Consider using `@googleapis/gmail` (scoped package) if available, which is much smaller
 - **Gmail API rate limits** — Agents calling search + read in loops may hit per-user quotas. _Mitigation:_ Return rate limit errors with exit code 5 and include retry-after info in JSON output

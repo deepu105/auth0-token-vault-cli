@@ -1,24 +1,27 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
-import { createHash, randomBytes } from 'node:crypto';
+import * as client from 'openid-client';
 import http from 'node:http';
 import { setupServer } from 'msw/node';
-import { handlers, mockTokenResponse } from '../mocks/handlers.js';
+import { handlers } from '../mocks/handlers.js';
 
-// We test the internal helpers indirectly by hitting the callback server,
-// but also verify the PKCE crypto directly.
-
-describe('PKCE crypto', () => {
-  it('generates a valid code_verifier (43-128 chars, base64url)', () => {
-    const verifier = randomBytes(32).toString('base64url');
+describe('PKCE crypto (openid-client)', () => {
+  it('generates a valid code_verifier (base64url)', () => {
+    const verifier = client.randomPKCECodeVerifier();
     expect(verifier.length).toBeGreaterThanOrEqual(43);
     expect(verifier).toMatch(/^[A-Za-z0-9_-]+$/);
   });
 
-  it('derives correct code_challenge from code_verifier', () => {
-    const verifier = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
-    const challenge = createHash('sha256').update(verifier).digest('base64url');
-    // Known SHA-256 of the above verifier
-    expect(challenge).toBe('E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM');
+  it('derives a code_challenge from code_verifier', async () => {
+    const verifier = client.randomPKCECodeVerifier();
+    const challenge = await client.calculatePKCECodeChallenge(verifier);
+    expect(challenge).toBeTruthy();
+    expect(challenge).toMatch(/^[A-Za-z0-9_-]+$/);
+  });
+
+  it('generates unique state values', () => {
+    const state1 = client.randomState();
+    const state2 = client.randomState();
+    expect(state1).not.toBe(state2);
   });
 });
 

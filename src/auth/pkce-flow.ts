@@ -1,9 +1,10 @@
-import { createHash, randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
+import * as client from 'openid-client';
 import open from 'open';
 import { log } from '../utils/logger.js';
 import type { Auth0Config } from '../utils/config.js';
 import { bindServer, htmlPage } from './browser.js';
+import { getOidcConfig } from './oidc-config.js';
 
 const TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 
@@ -30,13 +31,6 @@ export interface TokenResponse {
   scope?: string;
 }
 
-/** Generate PKCE code_verifier and code_challenge */
-function generatePkce() {
-  const codeVerifier = randomBytes(32).toString('base64url');
-  const codeChallenge = createHash('sha256').update(codeVerifier).digest('base64url');
-  return { codeVerifier, codeChallenge };
-}
-
 const SUCCESS_HTML = htmlPage(
   'Authentication successful',
   'You can close this tab and return to the terminal.'
@@ -48,12 +42,15 @@ const ERROR_HTML = (msg: string) => htmlPage('Authentication failed', msg);
  * 1. Start local callback server
  * 2. Open browser to Auth0 /authorize
  * 3. Wait for callback with authorization code
- * 4. Exchange code for tokens
+ * 4. Exchange code for tokens via openid-client
  */
 export async function runPkceFlow(options: PkceFlowOptions): Promise<TokenResponse> {
   const { config, connection, connectionScope, extraParams, scope, browser } = options;
-  const { codeVerifier, codeChallenge } = generatePkce();
-  const state = randomBytes(16).toString('base64url');
+
+  const oidcConfig = await getOidcConfig(config);
+  const codeVerifier = client.randomPKCECodeVerifier();
+  const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
+  const state = client.randomState();
 
   return new Promise<TokenResponse>((resolve, reject) => {
     let settled = false;
@@ -65,51 +62,42 @@ export async function runPkceFlow(options: PkceFlowOptions): Promise<TokenRespon
     };
 
     const server = createServer(async (req, res) => {
-      const url = new URL(req.url ?? '/', `http://127.0.0.1`);
+      const port = (server.address() as { port: number }).port;
+      const callbackUrl = new URL(req.url ?? '/', `http://127.0.0.1:${port}`);
 
-      if (url.pathname !== '/callback') {
+      if (callbackUrl.pathname !== '/callback') {
         res.writeHead(404).end('Not found');
         return;
       }
 
-      const error = url.searchParams.get('error');
-      if (error) {
-        const desc = url.searchParams.get('error_description') ?? error;
-        res.writeHead(400, { 'Content-Type': 'text/html' }).end(ERROR_HTML(desc));
-        server.close();
-        settle(() => reject(new Error(`Auth0 error: ${desc}`)));
-        return;
-      }
-
-      const returnedState = url.searchParams.get('state');
-      if (returnedState !== state) {
-        res.writeHead(400, { 'Content-Type': 'text/html' }).end(ERROR_HTML('State mismatch'));
-        server.close();
-        settle(() => reject(new Error('PKCE state mismatch — possible CSRF')));
-        return;
-      }
-
-      const code = url.searchParams.get('code');
-      if (!code) {
-        res.writeHead(400, { 'Content-Type': 'text/html' }).end(ERROR_HTML('Missing code'));
-        server.close();
-        settle(() => reject(new Error('Missing authorization code')));
-        return;
-      }
-
-      // Exchange code for tokens
       try {
-        const port = (server.address() as { port: number }).port;
-        const tokens = await exchangeCode(config, code, codeVerifier, port);
+        const tokens = await client.authorizationCodeGrant(oidcConfig, callbackUrl, {
+          pkceCodeVerifier: codeVerifier,
+          expectedState: state,
+        });
+
         res.writeHead(200, { 'Content-Type': 'text/html' }).end(SUCCESS_HTML);
         server.close();
-        settle(() => resolve(tokens));
+        settle(() =>
+          resolve({
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+            id_token: tokens.id_token,
+            expires_in: tokens.expires_in ?? 86400,
+            token_type: tokens.token_type,
+            scope: tokens.scope,
+          })
+        );
       } catch (err) {
-        res
-          .writeHead(500, { 'Content-Type': 'text/html' })
-          .end(ERROR_HTML('Token exchange failed'));
+        const message =
+          err instanceof client.AuthorizationResponseError
+            ? (err.error_description ?? err.error)
+            : err instanceof Error
+              ? err.message
+              : 'Token exchange failed';
+        res.writeHead(400, { 'Content-Type': 'text/html' }).end(ERROR_HTML(message));
         server.close();
-        settle(() => reject(err));
+        settle(() => reject(err instanceof Error ? err : new Error(String(message))));
       }
     });
 
@@ -127,70 +115,28 @@ export async function runPkceFlow(options: PkceFlowOptions): Promise<TokenRespon
         log('redirect server listening on http://127.0.0.1:%d', port);
         // eslint-disable-next-line
         console.log(`Redirect server listening on http://127.0.0.1:${port}`);
-        const params = new URLSearchParams({
-          response_type: 'code',
-          client_id: config.clientId,
+
+        const params: Record<string, string> = {
           redirect_uri: redirectUri,
-          state,
+          scope: scope ?? 'openid profile email offline_access',
           code_challenge: codeChallenge,
           code_challenge_method: 'S256',
-          scope: scope ?? 'openid profile email offline_access',
-        });
+          state,
+        };
 
-        if (config.audience) {
-          params.set('audience', config.audience);
-        }
-        if (connection) {
-          params.set('connection', connection);
-        }
-        if (connectionScope) {
-          params.set('connection_scope', connectionScope);
-        }
-        if (extraParams) {
-          for (const [k, v] of Object.entries(extraParams)) {
-            params.set(k, v);
-          }
-        }
+        if (config.audience) params.audience = config.audience;
+        if (connection) params.connection = connection;
+        if (connectionScope) params.connection_scope = connectionScope;
+        if (extraParams) Object.assign(params, extraParams);
 
-        const authorizeUrl = `https://${config.domain}/authorize?${params.toString()}`;
-        log('opening browser to %s', authorizeUrl);
+        const authorizeUrl = client.buildAuthorizationUrl(oidcConfig, params);
+        log('opening browser to %s', authorizeUrl.href);
 
-        return open(authorizeUrl, browser ? { app: { name: browser } } : undefined);
+        return open(authorizeUrl.href, browser ? { app: { name: browser } } : undefined);
       })
       .catch((err) => {
         server.close();
         settle(() => reject(err));
       });
   });
-}
-
-/** Exchange authorization code for tokens at Auth0's /oauth/token endpoint */
-async function exchangeCode(
-  config: Auth0Config,
-  code: string,
-  codeVerifier: string,
-  port: number
-): Promise<TokenResponse> {
-  const body = {
-    grant_type: 'authorization_code',
-    client_id: config.clientId,
-    client_secret: config.clientSecret,
-    code,
-    code_verifier: codeVerifier,
-    redirect_uri: `http://127.0.0.1:${port}/callback`,
-  };
-
-  const res = await fetch(`https://${config.domain}/oauth/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const errBody = await res.text();
-    log('token exchange failed: %s %s', res.status, errBody);
-    throw new Error(`Token exchange failed: ${res.status}`);
-  }
-
-  return (await res.json()) as TokenResponse;
 }

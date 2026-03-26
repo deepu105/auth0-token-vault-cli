@@ -1,3 +1,4 @@
+import * as client from 'openid-client';
 import { log } from '../utils/logger.js';
 import type { Auth0Config } from '../utils/config.js';
 import type { CredentialStore } from '../store/credential-store.js';
@@ -6,18 +7,12 @@ import {
   EXIT_AUTHZ_REQUIRED,
   EXIT_SERVICE_ERROR,
 } from '../utils/exit-codes.js';
+import { getOidcConfig } from './oidc-config.js';
 
 const GRANT_TYPE =
   'urn:auth0:params:oauth:grant-type:token-exchange:federated-connection-access-token';
 const SUBJECT_TOKEN_TYPE = 'urn:ietf:params:oauth:token-type:refresh_token';
 const REQUESTED_TOKEN_TYPE = 'http://auth0.com/oauth/token-type/federated-connection-access-token';
-
-interface ExchangeResponse {
-  access_token: string;
-  expires_in: number;
-  token_type: string;
-  scope?: string;
-}
 
 export class TokenExchangeError extends Error {
   constructor(
@@ -62,10 +57,7 @@ export async function exchangeForConnectionToken(
     );
   }
 
-  const body: Record<string, string> = {
-    grant_type: GRANT_TYPE,
-    client_id: config.clientId,
-    client_secret: config.clientSecret,
+  const params: Record<string, string> = {
     subject_token_type: SUBJECT_TOKEN_TYPE,
     subject_token: auth0Tokens.refreshToken,
     connection,
@@ -73,23 +65,26 @@ export async function exchangeForConnectionToken(
   };
 
   if (options?.loginHint) {
-    body.login_hint = options.loginHint;
+    params.login_hint = options.loginHint;
   }
 
   log('exchanging token for connection %s', connection);
 
-  const res = await fetch(`https://${config.domain}/oauth/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  let data: client.TokenEndpointResponse;
+  try {
+    const oidcConfig = await getOidcConfig(config);
+    data = await client.genericGrantRequest(oidcConfig, GRANT_TYPE, params);
+  } catch (err) {
+    // Map openid-client errors to TokenExchangeError with appropriate exit codes
+    const errCode = err instanceof client.ResponseBodyError ? err.error : undefined;
+    const errDesc =
+      err instanceof client.ResponseBodyError
+        ? (err.error_description ?? err.message)
+        : err instanceof Error
+          ? err.message
+          : String(err);
 
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({}));
-    const errCode = (errBody as Record<string, string>).error ?? 'unknown';
-    const errDesc = (errBody as Record<string, string>).error_description ?? `HTTP ${res.status}`;
-
-    log('token exchange failed: %s — %s', errCode, errDesc);
+    log('token exchange failed: %s — %s', errCode ?? 'unknown', errDesc);
 
     if (errCode === 'unauthorized_client' || errCode === 'access_denied') {
       throw new TokenExchangeError(
@@ -113,11 +108,10 @@ export async function exchangeForConnectionToken(
     throw new TokenExchangeError(`Token exchange failed: ${errDesc}`, EXIT_SERVICE_ERROR);
   }
 
-  const data = (await res.json()) as ExchangeResponse;
-
   // Validate required scopes if specified
+  const scopeStr = data.scope as string | undefined;
   if (options?.requiredScopes?.length) {
-    const grantedScopes = data.scope ? data.scope.split(' ') : [];
+    const grantedScopes = scopeStr ? scopeStr.split(' ') : [];
     const missing = options.requiredScopes.filter((s) => !grantedScopes.includes(s));
     if (missing.length > 0) {
       throw new TokenExchangeError(
@@ -128,10 +122,11 @@ export async function exchangeForConnectionToken(
   }
 
   // Cache with TTL
+  const expiresIn = (data.expires_in ?? 3600) as number;
   await store.saveConnectionToken(connection, {
     accessToken: data.access_token,
-    expiresAt: Date.now() + data.expires_in * 1000,
-    scopes: data.scope ? data.scope.split(' ') : [],
+    expiresAt: Date.now() + expiresIn * 1000,
+    scopes: scopeStr ? scopeStr.split(' ') : [],
   });
 
   return data.access_token;

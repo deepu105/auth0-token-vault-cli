@@ -45,7 +45,8 @@
     "googleapis": "^144.0.0",
     "jwt-decode": "^4.0.0",
     "keytar": "^7.9.0",
-    "open": "^10.1.0"
+    "open": "^10.1.0",
+    "openid-client": "^6.8.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.23.0",
@@ -64,7 +65,7 @@
     "vitest": "^3.1.1"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "publishConfig": {
     "access": "public"

@@ -2,6 +2,20 @@ import { http, HttpResponse } from 'msw';
 
 const AUTH0_DOMAIN = 'test.auth0.com';
 
+/** Mock OIDC discovery response for openid-client */
+export const mockDiscoveryResponse = {
+  issuer: `https://${AUTH0_DOMAIN}/`,
+  authorization_endpoint: `https://${AUTH0_DOMAIN}/authorize`,
+  token_endpoint: `https://${AUTH0_DOMAIN}/oauth/token`,
+  userinfo_endpoint: `https://${AUTH0_DOMAIN}/userinfo`,
+  jwks_uri: `https://${AUTH0_DOMAIN}/.well-known/jwks.json`,
+  response_types_supported: ['code'],
+  subject_types_supported: ['public'],
+  id_token_signing_alg_values_supported: ['RS256'],
+  token_endpoint_auth_methods_supported: ['client_secret_post', 'client_secret_basic'],
+  code_challenge_methods_supported: ['S256'],
+};
+
 /** Default token response from Auth0 /oauth/token */
 export const mockTokenResponse = {
   access_token: 'mock-access-token',
@@ -32,10 +46,26 @@ export const mockExchangeResponse = {
   scope: 'https://www.googleapis.com/auth/gmail.modify',
 };
 
+/** Parse request body as either JSON or form-encoded (openid-client uses form-encoded) */
+export async function parseBody(request: Request): Promise<Record<string, string>> {
+  const ct = request.headers.get('content-type') ?? '';
+  if (ct.includes('application/json')) {
+    return (await request.json()) as Record<string, string>;
+  }
+  // application/x-www-form-urlencoded
+  const text = await request.text();
+  return Object.fromEntries(new URLSearchParams(text));
+}
+
 export const handlers = [
-  // Auth0 token endpoint — authorization code exchange
+  // OIDC discovery endpoint
+  http.get(`https://${AUTH0_DOMAIN}/.well-known/openid-configuration`, () =>
+    HttpResponse.json(mockDiscoveryResponse)
+  ),
+
+  // Auth0 token endpoint
   http.post(`https://${AUTH0_DOMAIN}/oauth/token`, async ({ request }) => {
-    const body = (await request.json()) as Record<string, string>;
+    const body = await parseBody(request);
 
     // Federated connection token exchange
     if (
@@ -49,6 +79,21 @@ export const handlers = [
         );
       }
       return HttpResponse.json(mockExchangeResponse);
+    }
+
+    // Refresh token grant
+    if (body.grant_type === 'refresh_token') {
+      if (!body.refresh_token) {
+        return HttpResponse.json(
+          { error: 'invalid_grant', error_description: 'Missing refresh_token' },
+          { status: 400 }
+        );
+      }
+      return HttpResponse.json({
+        access_token: 'refreshed-access-token',
+        expires_in: 86400,
+        token_type: 'Bearer',
+      });
     }
 
     // Authorization code exchange
