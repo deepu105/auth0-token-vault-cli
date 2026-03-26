@@ -53,6 +53,9 @@ export function registerConnectCommand(program: Command) {
           process.exit(EXIT_AUTH_REQUIRED);
         }
 
+        // Clear any stale cached connection token before re-authorizing
+        await store.removeConnection(mapping.connection);
+
         output(
           { status: 'connecting', service: serviceLower },
           `Connecting ${chalk.cyan(serviceLower)}... Opening browser for authorization.`,

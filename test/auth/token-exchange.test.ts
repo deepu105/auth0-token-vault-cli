@@ -117,6 +117,33 @@ describe('exchangeForConnectionToken', () => {
     }
   });
 
+  it('throws EXIT_AUTHZ_REQUIRED on federated_connection_refresh_token_flow_failed', async () => {
+    await store.saveAuth0Tokens({
+      accessToken: 'valid-auth0-token',
+      refreshToken: 'valid-refresh-token',
+      expiresAt: Date.now() + 3600_000,
+    });
+
+    msw.use(
+      http.post('https://test.auth0.com/oauth/token', () =>
+        HttpResponse.json(
+          { error: 'federated_connection_refresh_token_flow_failed', error_description: 'Refresh Token flow for the Federated Connection failed' },
+          { status: 401 }
+        )
+      )
+    );
+
+    try {
+      await exchangeForConnectionToken(config, store, 'google-oauth2');
+      expect.fail('Should have thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(TokenExchangeError);
+      expect((err as TokenExchangeError).exitCode).toBe(4);
+      expect((err as TokenExchangeError).message).toContain('google-oauth2');
+      expect((err as TokenExchangeError).message).toContain('auth0-tv connect <service>');
+    }
+  });
+
   it('throws EXIT_AUTH_REQUIRED on expired_token', async () => {
     await store.saveAuth0Tokens({
       accessToken: 'valid-auth0-token',

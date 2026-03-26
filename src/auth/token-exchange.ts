@@ -91,7 +91,7 @@ export async function exchangeForConnectionToken(
 
     if (errCode === 'unauthorized_client' || errCode === 'access_denied') {
       throw new TokenExchangeError(
-        `Service not connected. Run \`auth0-tv connect ${connection === 'google-oauth2' ? 'gmail' : connection}\` first.`,
+        `Connection ${connection} not authorized. Run \`auth0-tv connect <service>\` first.`,
         EXIT_AUTHZ_REQUIRED
       );
     }
@@ -99,6 +99,12 @@ export async function exchangeForConnectionToken(
       throw new TokenExchangeError(
         'Session expired. Run `auth0-tv login` to re-authenticate.',
         EXIT_AUTH_REQUIRED
+      );
+    }
+    if (errCode === 'federated_connection_refresh_token_flow_failed') {
+      throw new TokenExchangeError(
+        `Connection ${connection} token refresh failed. Run \`auth0-tv connect <service>\` to re-authorize.`,
+        EXIT_AUTHZ_REQUIRED
       );
     }
 
@@ -113,7 +119,7 @@ export async function exchangeForConnectionToken(
     const missing = options.requiredScopes.filter((s) => !grantedScopes.includes(s));
     if (missing.length > 0) {
       throw new TokenExchangeError(
-        `Insufficient scopes. Missing: ${missing.join(', ')}. Run \`auth0-tv connect ${connection === 'google-oauth2' ? 'gmail' : connection}\` to grant additional permissions.`,
+        `Insufficient scopes for ${connection}. Missing: ${missing.join(', ')}. Run \`auth0-tv connect <service>\` to grant additional permissions.`,
         EXIT_AUTHZ_REQUIRED
       );
     }

@@ -26,9 +26,15 @@ export class KeyringBackend implements CredentialBackend {
 
   async getAuth0Tokens(): Promise<Auth0Tokens | null> {
     const raw = await this.get(AUTH0_TOKENS_ACCOUNT);
-    if (!raw) return null;
+    if (!raw) {
+      log('keyring getAuth0Tokens: no data found');
+      return null;
+    }
     try {
-      return JSON.parse(raw) as Auth0Tokens;
+      const tokens = JSON.parse(raw) as Auth0Tokens;
+      log('keyring getAuth0Tokens: refreshToken length=%d, accessToken length=%d, raw length=%d',
+        tokens.refreshToken?.length ?? 0, tokens.accessToken?.length ?? 0, raw.length);
+      return tokens;
     } catch {
       log('failed to parse auth0 tokens from keyring');
       return null;
@@ -36,7 +42,10 @@ export class KeyringBackend implements CredentialBackend {
   }
 
   async saveAuth0Tokens(tokens: Auth0Tokens): Promise<void> {
-    await this.set(AUTH0_TOKENS_ACCOUNT, JSON.stringify(tokens));
+    const json = JSON.stringify(tokens);
+    log('keyring saveAuth0Tokens: refreshToken length=%d, accessToken length=%d, json length=%d',
+      tokens.refreshToken?.length ?? 0, tokens.accessToken.length, json.length);
+    await this.set(AUTH0_TOKENS_ACCOUNT, json);
   }
 
   async getConnectionToken(connection: string): Promise<ConnectionToken | null> {
@@ -101,6 +110,14 @@ export class KeyringBackend implements CredentialBackend {
   private async set(account: string, value: string): Promise<void> {
     try {
       await keytar.setPassword(SERVICE_NAME, account, value);
+      // Round-trip verification: read back and compare
+      const readBack = await keytar.getPassword(SERVICE_NAME, account);
+      if (readBack !== value) {
+        log('keyring ROUND-TRIP MISMATCH for %s: wrote %d chars, read back %s',
+          account, value.length, readBack === null ? 'null' : `${readBack.length} chars`);
+      } else {
+        log('keyring set verified for %s (%d chars)', account, value.length);
+      }
     } catch (err) {
       log('keyring set failed for %s: %O', account, err);
       throw err;
