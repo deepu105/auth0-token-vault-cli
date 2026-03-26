@@ -1,5 +1,5 @@
 ---
-title: "Move Auth0 config into credential store with login prompts"
+title: 'Move Auth0 config into credential store with login prompts'
 type: feat
 status: completed
 date: 2026-03-25
@@ -69,7 +69,7 @@ Today, users must either set environment variables or manually create `~/.auth0-
 
 ## High-Level Technical Design
 
-> *This illustrates the intended approach and is directional guidance for review, not implementation specification. The implementing agent should treat it as context, not code to reproduce.*
+> _This illustrates the intended approach and is directional guidance for review, not implementation specification. The implementing agent should treat it as context, not code to reproduce._
 
 ```
 Login flow (auth0-tv login [--reconfigure]):

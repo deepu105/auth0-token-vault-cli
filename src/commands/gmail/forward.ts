@@ -15,11 +15,7 @@ export function registerForwardCommand(gmail: Command) {
         const client = await createGmailClient(cmd);
         const result = await client.forward(messageId, opts.to);
 
-        output(
-          { data: result },
-          chalk.green(`Message forwarded (id: ${result.id})`),
-          cmd
-        );
+        output({ data: result }, chalk.green(`Message forwarded (id: ${result.id})`), cmd);
       } catch (err) {
         handleGmailError(err, cmd);
       }

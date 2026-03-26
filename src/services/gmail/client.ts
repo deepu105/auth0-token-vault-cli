@@ -114,10 +114,7 @@ export class GmailClient {
 
   // ── Forward ───────────────────────────────────────────────────
 
-  async forward(
-    messageId: string,
-    to: string
-  ): Promise<{ id: string; threadId: string }> {
+  async forward(messageId: string, to: string): Promise<{ id: string; threadId: string }> {
     const original = await this.read(messageId);
 
     const fwdBody = [

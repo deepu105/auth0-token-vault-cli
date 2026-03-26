@@ -10,7 +10,7 @@ license: MIT
 allowed-tools: Bash(auth0-tv *)
 metadata:
   author: auth0
-  version: "0.1"
+  version: '0.1'
   openclaw:
     emoji: "\U0001F510"
     requires:
@@ -22,9 +22,9 @@ metadata:
     install:
       - id: npm
         kind: node
-        package: "auth0-token-vault-cli"
+        package: 'auth0-token-vault-cli'
         bins: [auth0-tv]
-        label: "Install auth0-tv (npm)"
+        label: 'Install auth0-tv (npm)'
 ---
 
 # Auth0 Token Vault CLI
@@ -33,6 +33,7 @@ Use the `auth0-tv` command-line tool to access third-party services on behalf of
 authenticated users via Auth0 Token Vault.
 
 ## Current status
+
 - Auth status: !`auth0-tv --json status 2>/dev/null || echo '{"error":{"code":"not_configured","message":"auth0-tv not configured or not logged in"}}'`
 
 ## When to use this skill
@@ -64,15 +65,15 @@ auth0-tv --json --confirm gmail send --to user@example.com --subject "Subject" -
 
 ### Exit codes and recovery
 
-| Code | Meaning | Recovery action |
-|------|---------|-----------------|
-| 0 | Success | Parse JSON output |
-| 1 | General error | Report error to user |
-| 2 | Invalid input | Check command syntax and required flags |
-| 3 | Auth required | Tell the user to run `auth0-tv login` |
-| 4 | Connection required | Tell the user to run `auth0-tv connect <service>` |
-| 5 | Service error | Retry or report upstream API failure |
-| 6 | Network error | Check connectivity, retry |
+| Code | Meaning             | Recovery action                                   |
+| ---- | ------------------- | ------------------------------------------------- |
+| 0    | Success             | Parse JSON output                                 |
+| 1    | General error       | Report error to user                              |
+| 2    | Invalid input       | Check command syntax and required flags           |
+| 3    | Auth required       | Tell the user to run `auth0-tv login`             |
+| 4    | Connection required | Tell the user to run `auth0-tv connect <service>` |
+| 5    | Service error       | Retry or report upstream API failure              |
+| 6    | Network error       | Check connectivity, retry                         |
 
 **Important:** Exit codes 3 and 4 require human intervention — `login` and `connect` open a browser for OAuth. Do not attempt to run these commands autonomously; instead, tell the user what to run.
 
@@ -89,6 +90,7 @@ Prefer `--body-file` or stdin for messages containing special characters.
 ## Available commands
 
 ### Authentication & setup
+
 - `auth0-tv login` — authenticate via browser (human-in-the-loop)
 - `auth0-tv logout` — clear stored credentials
 - `auth0-tv status` — show current user and connected services
@@ -97,6 +99,7 @@ Prefer `--body-file` or stdin for messages containing special characters.
 - `auth0-tv connections` — list connected services
 
 ### Gmail
+
 - `auth0-tv gmail search <query>` — search messages (supports Gmail search syntax)
 - `auth0-tv gmail read <messageId>` — read a message
 - `auth0-tv gmail send` — send a new message (destructive)

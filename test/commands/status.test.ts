@@ -37,9 +37,7 @@ describe('status command data', () => {
     expect(tokens!.idToken).toBeDefined();
 
     // Decode claims (middle segment of JWT)
-    const payload = JSON.parse(
-      Buffer.from(tokens!.idToken!.split('.')[1], 'base64url').toString()
-    );
+    const payload = JSON.parse(Buffer.from(tokens!.idToken!.split('.')[1], 'base64url').toString());
     expect(payload.email).toBe('test@example.com');
     expect(payload.name).toBe('Test User');
   });

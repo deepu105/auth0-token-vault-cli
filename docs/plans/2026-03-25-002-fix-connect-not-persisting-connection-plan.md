@@ -1,5 +1,5 @@
 ---
-title: "fix: Connect command does not persist connection to credential store"
+title: 'fix: Connect command does not persist connection to credential store'
 type: fix
 status: active
 date: 2026-03-25

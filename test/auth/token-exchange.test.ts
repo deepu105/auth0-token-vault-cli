@@ -127,7 +127,10 @@ describe('exchangeForConnectionToken', () => {
     msw.use(
       http.post('https://test.auth0.com/oauth/token', () =>
         HttpResponse.json(
-          { error: 'federated_connection_refresh_token_flow_failed', error_description: 'Refresh Token flow for the Federated Connection failed' },
+          {
+            error: 'federated_connection_refresh_token_flow_failed',
+            error_description: 'Refresh Token flow for the Federated Connection failed',
+          },
           { status: 401 }
         )
       )

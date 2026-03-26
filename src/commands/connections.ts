@@ -43,10 +43,6 @@ export function registerConnectionsCommand(program: Command) {
         return `  ${chalk.cyan(e.service)} (${e.connection}) — token: ${status}`;
       });
 
-      output(
-        { connections: entries },
-        `Connected services:\n${humanLines.join('\n')}`,
-        cmd
-      );
+      output({ connections: entries }, `Connected services:\n${humanLines.join('\n')}`, cmd);
     });
 }

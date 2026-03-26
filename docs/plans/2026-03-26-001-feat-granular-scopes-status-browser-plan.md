@@ -1,5 +1,5 @@
 ---
-title: "Granular Gmail scopes, storage type in status, browser selection"
+title: 'Granular Gmail scopes, storage type in status, browser selection'
 type: feat
 status: completed
 date: 2026-03-26

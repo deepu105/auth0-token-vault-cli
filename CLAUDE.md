@@ -27,6 +27,7 @@ npm run typecheck           # tsc --noEmit
 **Auth flow:** Browser-based PKCE login (`src/auth/pkce-flow.ts`) opens a local HTTP server on ports 18484-18489 to receive the OAuth callback. Token exchange for third-party services (`src/auth/token-exchange.ts`) uses Auth0's federated connection access token grant type with the stored refresh token.
 
 **Credential storage:** Two-tier facade pattern:
+
 - `CredentialStore` (facade in `src/store/credential-store.ts`) — handles expiry logic (5-min buffer), caching, and delegates to a backend
 - `CredentialBackend` interface (`src/store/backend.ts`) — implemented by `KeyringBackend` (OS keychain via keytar) and `FileBackend` (JSON in `~/.auth0-tv/`)
 - Backend selection: `AUTH0_TV_STORAGE` env var, defaults to `keyring`

@@ -1,5 +1,5 @@
 ---
-title: "feat: Secure credential store with OS keyring"
+title: 'feat: Secure credential store with OS keyring'
 type: feat
 status: completed
 date: 2026-03-25
@@ -65,7 +65,7 @@ The CLI currently stores OAuth tokens — including refresh tokens and access to
 
 ## High-Level Technical Design
 
-> *This illustrates the intended approach and is directional guidance for review, not implementation specification. The implementing agent should treat it as context, not code to reproduce.*
+> _This illustrates the intended approach and is directional guidance for review, not implementation specification. The implementing agent should treat it as context, not code to reproduce._
 
 ```
                     CredentialStore (facade)

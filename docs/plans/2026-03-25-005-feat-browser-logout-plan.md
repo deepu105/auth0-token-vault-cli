@@ -1,5 +1,5 @@
 ---
-title: "Add browser logout to auth0-tv logout"
+title: 'Add browser logout to auth0-tv logout'
 type: feat
 status: completed
 date: 2026-03-25

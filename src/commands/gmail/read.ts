@@ -11,11 +11,7 @@ export function registerReadCommand(gmail: Command) {
       try {
         const client = await createGmailClient(cmd);
         const email = await client.read(messageId);
-        output(
-          { data: email },
-          formatEmailFull(email),
-          cmd
-        );
+        output({ data: email }, formatEmailFull(email), cmd);
       } catch (err) {
         handleGmailError(err, cmd);
       }

@@ -48,7 +48,10 @@ export function handleGmailError(err: unknown, cmd: Command): never {
   // googleapis errors often have a code property
   const statusCode = (err as any)?.code ?? (err as any)?.status;
   if (statusCode === 401) {
-    outputError({ code: 'auth_required', message: 'Gmail token expired. Run `auth0-tv connect gmail`.' }, cmd);
+    outputError(
+      { code: 'auth_required', message: 'Gmail token expired. Run `auth0-tv connect gmail`.' },
+      cmd
+    );
     process.exit(EXIT_AUTH_REQUIRED);
   }
 
@@ -109,7 +112,9 @@ export async function resolveBody(opts: {
     const cwd = process.cwd();
     const resolved = await realpath(resolve(cwd, opts.bodyFile));
     if (!resolved.startsWith(`${cwd}/`) && resolved !== cwd) {
-      throw new Error(`--body-file path must be within the working directory. Resolved to: ${resolved}`);
+      throw new Error(
+        `--body-file path must be within the working directory. Resolved to: ${resolved}`
+      );
     }
     return readFile(resolved, 'utf-8');
   }

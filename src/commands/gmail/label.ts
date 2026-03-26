@@ -12,11 +12,7 @@ export function registerLabelCommands(gmail: Command) {
         const client = await createGmailClient(cmd);
         const labels = await client.listLabels();
 
-        output(
-          { data: labels },
-          formatLabelList(labels),
-          cmd
-        );
+        output({ data: labels }, formatLabelList(labels), cmd);
       } catch (err) {
         handleGmailError(err, cmd);
       }

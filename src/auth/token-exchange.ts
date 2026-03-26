@@ -1,13 +1,16 @@
 import { log } from '../utils/logger.js';
 import type { Auth0Config } from '../utils/config.js';
 import type { CredentialStore } from '../store/credential-store.js';
-import { EXIT_AUTH_REQUIRED, EXIT_AUTHZ_REQUIRED, EXIT_SERVICE_ERROR } from '../utils/exit-codes.js';
+import {
+  EXIT_AUTH_REQUIRED,
+  EXIT_AUTHZ_REQUIRED,
+  EXIT_SERVICE_ERROR,
+} from '../utils/exit-codes.js';
 
 const GRANT_TYPE =
   'urn:auth0:params:oauth:grant-type:token-exchange:federated-connection-access-token';
 const SUBJECT_TOKEN_TYPE = 'urn:ietf:params:oauth:token-type:refresh_token';
-const REQUESTED_TOKEN_TYPE =
-  'http://auth0.com/oauth/token-type/federated-connection-access-token';
+const REQUESTED_TOKEN_TYPE = 'http://auth0.com/oauth/token-type/federated-connection-access-token';
 
 interface ExchangeResponse {
   access_token: string;
@@ -84,8 +87,7 @@ export async function exchangeForConnectionToken(
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
     const errCode = (errBody as Record<string, string>).error ?? 'unknown';
-    const errDesc =
-      (errBody as Record<string, string>).error_description ?? `HTTP ${res.status}`;
+    const errDesc = (errBody as Record<string, string>).error_description ?? `HTTP ${res.status}`;
 
     log('token exchange failed: %s — %s', errCode, errDesc);
 

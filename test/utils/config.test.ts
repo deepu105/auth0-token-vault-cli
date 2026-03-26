@@ -2,7 +2,12 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { mergeConfigFromEnvAndStore, requireConfig, resolveBrowser, resolveStorageBackend } from '../../src/utils/config.js';
+import {
+  mergeConfigFromEnvAndStore,
+  requireConfig,
+  resolveBrowser,
+  resolveStorageBackend,
+} from '../../src/utils/config.js';
 import { CredentialStore } from '../../src/store/credential-store.js';
 
 // ── resolveStorageBackend ─────────────────────────────────────
@@ -224,6 +229,8 @@ describe('requireConfig', () => {
     });
     const store = await makeStore();
 
-    await expect(requireConfig(store)).rejects.toThrow('AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET');
+    await expect(requireConfig(store)).rejects.toThrow(
+      'AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET'
+    );
   });
 });

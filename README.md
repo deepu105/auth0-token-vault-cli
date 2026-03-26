@@ -102,15 +102,15 @@ Set environment variables or create `~/.auth0-tv/config.json`:
 
 ### Environment Variables
 
-| Variable              | Description                                          |
-| --------------------- | ---------------------------------------------------- |
-| `AUTH0_DOMAIN`        | Auth0 tenant domain                                  |
-| `AUTH0_CLIENT_ID`     | Auth0 application client ID                          |
-| `AUTH0_CLIENT_SECRET` | Auth0 application client secret                      |
-| `AUTH0_AUDIENCE`      | API audience (optional)                              |
-| `AUTH0_TV_OUTPUT`     | Set to `json` to auto-enable JSON output for agents  |
-| `AUTH0_TV_STORAGE`    | Credential backend: `keyring` (default) or `file`    |
-| `AUTH0_TV_BROWSER`    | Browser to open for auth flows (e.g. `firefox`)      |
+| Variable              | Description                                         |
+| --------------------- | --------------------------------------------------- |
+| `AUTH0_DOMAIN`        | Auth0 tenant domain                                 |
+| `AUTH0_CLIENT_ID`     | Auth0 application client ID                         |
+| `AUTH0_CLIENT_SECRET` | Auth0 application client secret                     |
+| `AUTH0_AUDIENCE`      | API audience (optional)                             |
+| `AUTH0_TV_OUTPUT`     | Set to `json` to auto-enable JSON output for agents |
+| `AUTH0_TV_STORAGE`    | Credential backend: `keyring` (default) or `file`   |
+| `AUTH0_TV_BROWSER`    | Browser to open for auth flows (e.g. `firefox`)     |
 
 ## Commands
 
@@ -151,10 +151,12 @@ The CLI is designed as a skill for AI agents (Claude Code, OpenClaw, etc.).
 The CLI ships with an [Agent Skills](https://agentskills.io) manifest that enables automatic discovery in supported agent frameworks.
 
 **In-project discovery (automatic):** When working in this repo, agents discover the skill automatically:
+
 - **OpenClaw:** via `skills/auth0-token-vault/SKILL.md`
 - **Claude Code:** via `.claude/skills/auth0-token-vault/SKILL.md` (symlink)
 
 **Global installation:** For use outside this repo, install `auth0-tv` globally and copy the skill:
+
 ```bash
 npm install -g @auth0/token-vault-cli
 

@@ -13,11 +13,7 @@ export function registerSearchCommand(gmail: Command) {
       try {
         const client = await createGmailClient(cmd);
         const result = await client.search(query, parseInt(opts.maxResults, 10), opts.pageToken);
-        output(
-          { data: result },
-          formatSearchResult(result),
-          cmd
-        );
+        output({ data: result }, formatSearchResult(result), cmd);
       } catch (err) {
         handleGmailError(err, cmd);
       }

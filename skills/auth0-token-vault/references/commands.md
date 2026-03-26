@@ -4,11 +4,11 @@ Full command reference for agent invocation. All examples use `--json` mode.
 
 ## Global options
 
-| Flag | Description |
-|------|-------------|
-| `--json` | Output structured JSON (required for agent use) |
-| `--confirm` / `--yes` | Skip destructive-action confirmation prompts |
-| `--browser <app>` | Browser for auth flows (e.g. `firefox`, `google-chrome`) |
+| Flag                  | Description                                              |
+| --------------------- | -------------------------------------------------------- |
+| `--json`              | Output structured JSON (required for agent use)          |
+| `--confirm` / `--yes` | Skip destructive-action confirmation prompts             |
+| `--browser <app>`     | Browser for auth flows (e.g. `firefox`, `google-chrome`) |
 
 Alternatively, set `AUTH0_TV_OUTPUT=json` in the environment instead of passing `--json` on every call.
 
@@ -23,8 +23,8 @@ auth0-tv login
 auth0-tv login --reconfigure   # re-prompt for Auth0 credentials
 ```
 
-| Flag | Description |
-|------|-------------|
+| Flag            | Description                                       |
+| --------------- | ------------------------------------------------- |
 | `--reconfigure` | Re-prompt for Auth0 domain, client ID, and secret |
 
 ### logout
@@ -36,8 +36,8 @@ auth0-tv --json logout
 auth0-tv --json logout --local   # clear local credentials only
 ```
 
-| Flag | Description |
-|------|-------------|
+| Flag      | Description                                                     |
+| --------- | --------------------------------------------------------------- |
 | `--local` | Only clear local credentials without ending the browser session |
 
 ### status
@@ -49,6 +49,7 @@ auth0-tv --json status
 ```
 
 Example JSON output:
+
 ```json
 {
   "loggedIn": true,
@@ -95,10 +96,10 @@ auth0-tv --json gmail search "meeting notes" -n 5
 auth0-tv --json gmail search "in:inbox" --page-token <token>
 ```
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-n, --max-results <n>` | Maximum results to return | 10 |
-| `--page-token <token>` | Page token for pagination | — |
+| Flag                    | Description               | Default |
+| ----------------------- | ------------------------- | ------- |
+| `-n, --max-results <n>` | Maximum results to return | 10      |
+| `--page-token <token>`  | Page token for pagination | —       |
 
 ### gmail read
 
@@ -118,12 +119,12 @@ auth0-tv --json --confirm gmail send --to user@example.com --subject "Subject" -
 echo "Body" | auth0-tv --json --confirm gmail send --to user@example.com --subject "Subject"
 ```
 
-| Flag | Description |
-|------|-------------|
-| `--to <address>` | Recipient email address (required) |
-| `--subject <subject>` | Email subject (required) |
-| `--body <text>` | Email body text |
-| `--body-file <path>` | Read body from file |
+| Flag                  | Description                        |
+| --------------------- | ---------------------------------- |
+| `--to <address>`      | Recipient email address (required) |
+| `--subject <subject>` | Email subject (required)           |
+| `--body <text>`       | Email body text                    |
+| `--body-file <path>`  | Read body from file                |
 
 Body can also be provided via stdin when neither `--body` nor `--body-file` is specified.
 
@@ -136,9 +137,9 @@ auth0-tv --json --confirm gmail reply <messageId> --body "Thanks!"
 auth0-tv --json --confirm gmail reply <messageId> --body-file ./reply.txt
 ```
 
-| Flag | Description |
-|------|-------------|
-| `--body <text>` | Reply body text |
+| Flag                 | Description         |
+| -------------------- | ------------------- |
+| `--body <text>`      | Reply body text     |
 | `--body-file <path>` | Read body from file |
 
 ### gmail forward
@@ -149,8 +150,8 @@ Forward a message. **Destructive — requires `--confirm`.**
 auth0-tv --json --confirm gmail forward <messageId> --to recipient@example.com
 ```
 
-| Flag | Description |
-|------|-------------|
+| Flag             | Description                        |
+| ---------------- | ---------------------------------- |
 | `--to <address>` | Recipient email address (required) |
 
 ### gmail archive
@@ -187,9 +188,9 @@ auth0-tv --json gmail label <messageId> --remove INBOX --add ARCHIVED
 auth0-tv --json gmail label <messageId> --add "Label_1,Label_2"
 ```
 
-| Flag | Description |
-|------|-------------|
-| `--add <labels>` | Comma-separated label IDs to add |
+| Flag                | Description                         |
+| ------------------- | ----------------------------------- |
+| `--add <labels>`    | Comma-separated label IDs to add    |
 | `--remove <labels>` | Comma-separated label IDs to remove |
 
 ### gmail draft create
@@ -201,12 +202,12 @@ auth0-tv --json gmail draft create --to user@example.com --subject "Draft" --bod
 auth0-tv --json gmail draft create --to user@example.com --subject "Draft" --body-file ./draft.txt
 ```
 
-| Flag | Description |
-|------|-------------|
-| `--to <address>` | Recipient email address |
-| `--subject <subject>` | Email subject |
-| `--body <text>` | Draft body text |
-| `--body-file <path>` | Read body from file |
+| Flag                  | Description             |
+| --------------------- | ----------------------- |
+| `--to <address>`      | Recipient email address |
+| `--subject <subject>` | Email subject           |
+| `--body <text>`       | Draft body text         |
+| `--body-file <path>`  | Read body from file     |
 
 ### gmail draft list
 
@@ -217,9 +218,9 @@ auth0-tv --json gmail draft list
 auth0-tv --json gmail draft list -n 5
 ```
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-n, --max-results <n>` | Maximum results | 20 |
+| Flag                    | Description     | Default |
+| ----------------------- | --------------- | ------- |
+| `-n, --max-results <n>` | Maximum results | 20      |
 
 ### gmail draft send
 
@@ -239,15 +240,15 @@ auth0-tv --json --confirm gmail draft delete <draftId>
 
 ## Exit codes
 
-| Code | Constant | Meaning |
-|------|----------|---------|
-| 0 | — | Success |
-| 1 | `EXIT_GENERAL` | General / unexpected error |
-| 2 | `EXIT_INVALID_INPUT` | Invalid input or missing required flag |
-| 3 | `EXIT_AUTH_REQUIRED` | Authentication required — user must run `auth0-tv login` |
-| 4 | `EXIT_AUTHZ_REQUIRED` | Service not connected — user must run `auth0-tv connect <service>` |
-| 5 | `EXIT_SERVICE_ERROR` | Upstream service error (e.g. Gmail API failure) |
-| 6 | `EXIT_NETWORK_ERROR` | Network error (unreachable host, timeout) |
+| Code | Constant              | Meaning                                                            |
+| ---- | --------------------- | ------------------------------------------------------------------ |
+| 0    | —                     | Success                                                            |
+| 1    | `EXIT_GENERAL`        | General / unexpected error                                         |
+| 2    | `EXIT_INVALID_INPUT`  | Invalid input or missing required flag                             |
+| 3    | `EXIT_AUTH_REQUIRED`  | Authentication required — user must run `auth0-tv login`           |
+| 4    | `EXIT_AUTHZ_REQUIRED` | Service not connected — user must run `auth0-tv connect <service>` |
+| 5    | `EXIT_SERVICE_ERROR`  | Upstream service error (e.g. Gmail API failure)                    |
+| 6    | `EXIT_NETWORK_ERROR`  | Network error (unreachable host, timeout)                          |
 
 ## Error JSON format
 

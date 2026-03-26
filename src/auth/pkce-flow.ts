@@ -37,7 +37,10 @@ function generatePkce() {
   return { codeVerifier, codeChallenge };
 }
 
-const SUCCESS_HTML = htmlPage('Authentication successful', 'You can close this tab and return to the terminal.');
+const SUCCESS_HTML = htmlPage(
+  'Authentication successful',
+  'You can close this tab and return to the terminal.'
+);
 const ERROR_HTML = (msg: string) => htmlPage('Authentication failed', msg);
 
 /**
@@ -102,7 +105,9 @@ export async function runPkceFlow(options: PkceFlowOptions): Promise<TokenRespon
         server.close();
         settle(() => resolve(tokens));
       } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'text/html' }).end(ERROR_HTML('Token exchange failed'));
+        res
+          .writeHead(500, { 'Content-Type': 'text/html' })
+          .end(ERROR_HTML('Token exchange failed'));
         server.close();
         settle(() => reject(err));
       }

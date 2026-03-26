@@ -2,7 +2,12 @@ import type { Command } from 'commander';
 import chalk from 'chalk';
 import { output, outputError } from '../../utils/output.js';
 import { EXIT_INVALID_INPUT } from '../../utils/exit-codes.js';
-import { createGmailClient, handleGmailError, requireConfirmation, resolveBody } from './helpers.js';
+import {
+  createGmailClient,
+  handleGmailError,
+  requireConfirmation,
+  resolveBody,
+} from './helpers.js';
 
 export function registerSendCommand(gmail: Command) {
   gmail
@@ -31,11 +36,7 @@ export function registerSendCommand(gmail: Command) {
         const client = await createGmailClient(cmd);
         const result = await client.send(opts.to, opts.subject, body);
 
-        output(
-          { data: result },
-          chalk.green(`Message sent (id: ${result.id})`),
-          cmd
-        );
+        output({ data: result }, chalk.green(`Message sent (id: ${result.id})`), cmd);
       } catch (err) {
         handleGmailError(err, cmd);
       }

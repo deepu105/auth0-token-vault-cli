@@ -1,5 +1,5 @@
 ---
-title: "feat: Auth0 Token Vault CLI (auth0-tv)"
+title: 'feat: Auth0 Token Vault CLI (auth0-tv)'
 type: feat
 status: active
 date: 2026-03-25
@@ -78,7 +78,7 @@ AI agents need to access third-party services on behalf of authenticated users. 
 
 ## High-Level Technical Design
 
-> *This illustrates the intended approach and is directional guidance for review, not implementation specification. The implementing agent should treat it as context, not code to reproduce.*
+> _This illustrates the intended approach and is directional guidance for review, not implementation specification. The implementing agent should treat it as context, not code to reproduce._
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -104,6 +104,7 @@ AI agents need to access third-party services on behalf of authenticated users. 
 ```
 
 **Auth flow sequence:**
+
 1. `login` → start localhost callback server → open browser to Auth0 `/authorize` with PKCE → receive code → exchange for tokens → store to `~/.auth0-tv/credentials.json`
 2. `connect gmail` → same PKCE flow but with `connection=google-oauth2` and `connection_scope` for Gmail scopes → store updated tokens
 3. `gmail search "query"` → load Auth0 access token → exchange for Gmail token via federated-connection grant → cache Gmail token with TTL → call Gmail API → format output
@@ -428,10 +429,10 @@ AI agents need to access third-party services on behalf of authenticated users. 
 
 ## Risks & Dependencies
 
-- **Auth0 Token Vault public client support** — The plan assumes access token exchange works for public clients (no client_secret). If this doesn't work, the architecture needs a confidential client with a locally-stored secret. *Mitigation:* Validate this in Unit 3 before building the Gmail layer
-- **Auth0 callback URL registration** — Must pre-register `http://127.0.0.1:18484/callback` through `:18489/callback` in the Auth0 app. *Mitigation:* Document in README setup guide
+- **Auth0 Token Vault public client support** — The plan assumes access token exchange works for public clients (no client_secret). If this doesn't work, the architecture needs a confidential client with a locally-stored secret. _Mitigation:_ Validate this in Unit 3 before building the Gmail layer
+- **Auth0 callback URL registration** — Must pre-register `http://127.0.0.1:18484/callback` through `:18489/callback` in the Auth0 app. _Mitigation:_ Document in README setup guide
 - **googleapis dependency size** — The full `googleapis` package is large. Consider using `@googleapis/gmail` (scoped package) if available, which is much smaller
-- **Gmail API rate limits** — Agents calling search + read in loops may hit per-user quotas. *Mitigation:* Return rate limit errors with exit code 5 and include retry-after info in JSON output
+- **Gmail API rate limits** — Agents calling search + read in loops may hit per-user quotas. _Mitigation:_ Return rate limit errors with exit code 5 and include retry-after info in JSON output
 
 ## Sources & References
 

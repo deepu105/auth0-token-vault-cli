@@ -51,9 +51,15 @@ export function htmlPage(title: string, message: string): string {
  * callback that shows a "Logged out" page. Best-effort — failures are logged
  * but do not throw.
  */
-export async function openBrowserLogout(domain: string, clientId: string, browser?: string): Promise<void> {
+export async function openBrowserLogout(
+  domain: string,
+  clientId: string,
+  browser?: string
+): Promise<void> {
   const server = createServer((_req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/html' }).end(htmlPage('Logged out', 'You can close this tab and return to the terminal.'));
+    res
+      .writeHead(200, { 'Content-Type': 'text/html' })
+      .end(htmlPage('Logged out', 'You can close this tab and return to the terminal.'));
     server.close();
   });
 

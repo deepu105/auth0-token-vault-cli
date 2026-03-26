@@ -32,8 +32,12 @@ export class KeyringBackend implements CredentialBackend {
     }
     try {
       const tokens = JSON.parse(raw) as Auth0Tokens;
-      log('keyring getAuth0Tokens: refreshToken length=%d, accessToken length=%d, raw length=%d',
-        tokens.refreshToken?.length ?? 0, tokens.accessToken?.length ?? 0, raw.length);
+      log(
+        'keyring getAuth0Tokens: refreshToken length=%d, accessToken length=%d, raw length=%d',
+        tokens.refreshToken?.length ?? 0,
+        tokens.accessToken?.length ?? 0,
+        raw.length
+      );
       return tokens;
     } catch {
       log('failed to parse auth0 tokens from keyring');
@@ -43,8 +47,12 @@ export class KeyringBackend implements CredentialBackend {
 
   async saveAuth0Tokens(tokens: Auth0Tokens): Promise<void> {
     const json = JSON.stringify(tokens);
-    log('keyring saveAuth0Tokens: refreshToken length=%d, accessToken length=%d, json length=%d',
-      tokens.refreshToken?.length ?? 0, tokens.accessToken.length, json.length);
+    log(
+      'keyring saveAuth0Tokens: refreshToken length=%d, accessToken length=%d, json length=%d',
+      tokens.refreshToken?.length ?? 0,
+      tokens.accessToken.length,
+      json.length
+    );
     await this.set(AUTH0_TOKENS_ACCOUNT, json);
   }
 
@@ -113,8 +121,12 @@ export class KeyringBackend implements CredentialBackend {
       // Round-trip verification: read back and compare
       const readBack = await keytar.getPassword(SERVICE_NAME, account);
       if (readBack !== value) {
-        log('keyring ROUND-TRIP MISMATCH for %s: wrote %d chars, read back %s',
-          account, value.length, readBack === null ? 'null' : `${readBack.length} chars`);
+        log(
+          'keyring ROUND-TRIP MISMATCH for %s: wrote %d chars, read back %s',
+          account,
+          value.length,
+          readBack === null ? 'null' : `${readBack.length} chars`
+        );
       } else {
         log('keyring set verified for %s (%d chars)', account, value.length);
       }

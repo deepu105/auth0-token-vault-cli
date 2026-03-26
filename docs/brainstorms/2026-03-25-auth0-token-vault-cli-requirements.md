@@ -16,6 +16,7 @@ The CLI (`auth0-tv`) serves two audiences: humans performing initial setup (logi
 ## Requirements
 
 ### Authentication & Setup
+
 - R1. Users authenticate by running `auth0-tv login` — CLI opens the default browser to Auth0's login page and receives the token via a temporary local HTTP callback server (Authorization Code + PKCE), same mechanism as the connect flow. The local callback server must validate the OAuth state parameter, bind to localhost only, and shut down after a short timeout.
 - R2. Auth state (tokens, session) persists locally in `~/.auth0-tv/` with optional system keychain support via `--use-keychain`. Directory created with mode 0700, credential files with mode 0600. Tokens and credentials must never appear in CLI output, error messages, or debug logs.
 - R3. Users connect third-party services by running `auth0-tv connect <service>` — CLI opens the default browser to an Auth0 authorization URL for the user to grant access (account linking flow)
@@ -23,11 +24,13 @@ The CLI (`auth0-tv`) serves two audiences: humans performing initial setup (logi
 - R5. Users can check auth status (`auth0-tv status`) showing logged-in user and connected services (without exposing raw tokens)
 
 ### Token Flow
+
 - R6. After login (R1), the CLI stores the Auth0 access token and refresh token locally
 - R7. For each Gmail command, the CLI performs a token exchange using the stored Auth0 access token to obtain a Gmail access token via the federated-connection-access-token grant type (public client path, no client_secret required)
 - R8. Gmail access tokens are cached locally with TTL based on expires_in. When expired, the CLI transparently re-exchanges. When re-exchange fails, the CLI exits with an auth-failure exit code indicating re-login or re-connect is needed
 
 ### Gmail Integration (v1 service)
+
 Gmail commands are thin proxies to the [Gmail REST API](https://developers.google.com/workspace/gmail/api/reference/rest), either via direct HTTP calls or the [Google API Node.js client](https://github.com/googleapis/google-api-nodejs-client).
 
 - R9. Search emails: `auth0-tv gmail search <query>` — supports Gmail search syntax, returns list of matching emails
@@ -40,12 +43,14 @@ Gmail commands are thin proxies to the [Gmail REST API](https://developers.googl
 - R16. Archive/delete: `auth0-tv gmail archive <message-id>`, `auth0-tv gmail delete <message-id>`
 
 ### Output & Agent Integration
+
 - R17. Human-friendly formatted output by default; `--json` flag on all commands for structured JSON output suitable for agent consumption
 - R18. Destructive/sensitive actions (send, delete, archive, forward) require `--confirm` or `--yes` flag when running non-interactively; prompt interactively when a TTY is detected
 - R19. Consistent, non-zero exit codes for error categories so agents can handle errors programmatically: 1 = general error, 2 = invalid input/usage, 3 = authentication required (login needed), 4 = authorization required (connect needed), 5 = service API error, 6 = network error
 - R20. A `--help` on every command with clear descriptions, usable as agent skill documentation
 
 ### Extensibility
+
 - R21. Service commands are organized as subcommand groups (`auth0-tv gmail ...`, `auth0-tv calendar ...`, `auth0-tv slack ...`) so new services can be added without changing the core CLI structure
 
 ## Success Criteria
@@ -89,6 +94,7 @@ Gmail commands are thin proxies to the [Gmail REST API](https://developers.googl
 ## Outstanding Questions
 
 ### Deferred to Planning
+
 - [Affects R2][Technical] What encryption/protection approach for local credential file? Consider: OS keychain as default (like auth0-mcp-server) with encrypted file as fallback, or filesystem permissions only (like ~/.aws/credentials)
 - [Affects R3][Needs research] What is the exact Auth0 account linking URL format for opening browser-based connection flow?
 - [Affects R17][Technical] What JSON schema should structured output follow? (Consider compatibility with OpenClaw skill format)

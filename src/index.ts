@@ -50,6 +50,7 @@ program.addCommand(createGmailCommand());
 
 // ── Unknown command handling ───────────────────────────────────
 program.on('command:*', () => {
+  // eslint-disable-next-line no-console
   console.error(`Unknown command: ${program.args.join(' ')}`);
   program.outputHelp();
   process.exit(EXIT_INVALID_INPUT);

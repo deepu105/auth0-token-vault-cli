@@ -100,7 +100,10 @@ export class FileBackend implements CredentialBackend {
 
   private async persist(data: CredentialData): Promise<void> {
     await mkdir(this.dir, { recursive: true, mode: 0o700 });
-    await writeFile(this.filePath, JSON.stringify(data, null, 2), { encoding: 'utf-8', mode: 0o600 });
+    await writeFile(this.filePath, JSON.stringify(data, null, 2), {
+      encoding: 'utf-8',
+      mode: 0o600,
+    });
   }
 }
 

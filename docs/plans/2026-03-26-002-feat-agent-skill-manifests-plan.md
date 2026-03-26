@@ -1,5 +1,5 @@
 ---
-title: "feat: Add Agent Skills manifests for Claude Code and OpenClaw"
+title: 'feat: Add Agent Skills manifests for Claude Code and OpenClaw'
 type: feat
 status: completed
 date: 2026-03-26

@@ -34,7 +34,8 @@ export async function resolveConfigWithPrompts(
   try {
     process.stderr.write('\nAuth0 configuration required.\n\n');
 
-    const domain = merged.domain || (await askRequired(rl, 'Auth0 domain (e.g. your-tenant.eu.auth0.com): '));
+    const domain =
+      merged.domain || (await askRequired(rl, 'Auth0 domain (e.g. your-tenant.eu.auth0.com): '));
     const clientId = merged.clientId || (await askRequired(rl, 'Client ID: '));
     const clientSecret = merged.clientSecret || (await askRequired(rl, 'Client secret: '));
     const audience =

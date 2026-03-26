@@ -89,10 +89,7 @@ export function registerConnectCommand(program: Command) {
           await exchangeForConnectionToken(config, store, mapping.connection);
         } catch (exchangeErr) {
           exchangeFailed = true;
-          logError(
-            'Token exchange after connect failed (connection may still work)',
-            exchangeErr
-          );
+          logError('Token exchange after connect failed (connection may still work)', exchangeErr);
           const errMsg = exchangeErr instanceof Error ? exchangeErr.message : String(exchangeErr);
           output(
             { status: 'warning', message: errMsg },

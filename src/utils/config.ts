@@ -47,7 +47,12 @@ export async function requireConfig(store: CredentialStore): Promise<Auth0Config
 
   if (missing.length === 0) {
     log('config resolved from env/store');
-    return { domain: domain!, clientId: clientId!, clientSecret: clientSecret!, audience: audience || undefined };
+    return {
+      domain: domain!,
+      clientId: clientId!,
+      clientSecret: clientSecret!,
+      audience: audience || undefined,
+    };
   }
 
   throw new Error(
@@ -74,9 +79,7 @@ export function resolveStorageBackend(): StorageBackend {
   const envVal = process.env.AUTH0_TV_STORAGE;
   if (envVal) {
     if (envVal !== 'keyring' && envVal !== 'file') {
-      throw new Error(
-        `Invalid AUTH0_TV_STORAGE value "${envVal}". Must be "keyring" or "file".`
-      );
+      throw new Error(`Invalid AUTH0_TV_STORAGE value "${envVal}". Must be "keyring" or "file".`);
     }
     return envVal;
   }
