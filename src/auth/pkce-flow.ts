@@ -17,6 +17,8 @@ export interface PkceFlowOptions {
   extraParams?: Record<string, string>;
   /** Base scopes for the Auth0 request */
   scope?: string;
+  /** Browser app name to use (e.g. 'firefox'). Undefined = system default. */
+  browser?: string;
 }
 
 export interface TokenResponse {
@@ -46,7 +48,7 @@ const ERROR_HTML = (msg: string) => htmlPage('Authentication failed', msg);
  * 4. Exchange code for tokens
  */
 export async function runPkceFlow(options: PkceFlowOptions): Promise<TokenResponse> {
-  const { config, connection, connectionScope, extraParams, scope } = options;
+  const { config, connection, connectionScope, extraParams, scope, browser } = options;
   const { codeVerifier, codeChallenge } = generatePkce();
   const state = randomBytes(16).toString('base64url');
 
@@ -148,7 +150,7 @@ export async function runPkceFlow(options: PkceFlowOptions): Promise<TokenRespon
         const authorizeUrl = `https://${config.domain}/authorize?${params.toString()}`;
         log('opening browser to %s', authorizeUrl);
 
-        return open(authorizeUrl);
+        return open(authorizeUrl, browser ? { app: { name: browser } } : undefined);
       })
       .catch((err) => {
         server.close();

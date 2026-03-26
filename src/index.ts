@@ -26,6 +26,7 @@ const program = new Command()
   .option('--json', 'Output results as JSON (for agent consumption)')
   .option('--confirm', 'Skip destructive-action confirmation prompts (alias: --yes)')
   .option('--yes', 'Skip destructive-action confirmation prompts (alias: --confirm)')
+  .option('--browser <app>', 'Browser to open for auth flows (e.g. firefox, google-chrome)')
   .addHelpText(
     'before',
     `

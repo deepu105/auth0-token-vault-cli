@@ -56,6 +56,16 @@ export async function requireConfig(store: CredentialStore): Promise<Auth0Config
 }
 
 /**
+ * Resolve the browser to use for auth flows. Precedence:
+ *  1. --browser CLI flag (passed via Commander)
+ *  2. AUTH0_TV_BROWSER env var
+ *  3. undefined (system default)
+ */
+export function resolveBrowser(flagValue?: string): string | undefined {
+  return flagValue || process.env.AUTH0_TV_BROWSER || undefined;
+}
+
+/**
  * Resolve the credential storage backend. Precedence:
  *  1. AUTH0_TV_STORAGE env var
  *  2. Default: 'keyring'

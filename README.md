@@ -206,7 +206,8 @@ MIT
 
 # TODO
 
-- [ ] make gmail scopes granular
+- [ ] How is token refresh handled on auth0 token expiry? Do we proactively refresh tokens before expiry or just rely on error handling and re-authentication?
+- [ ] Add skill.md for agent integration instructions and best practices
 - [ ] Add more services (Slack, Google Calendar, etc.)
-- [ ] show credential location in status
-- [ ] browser selection for auth flow via flags or env var (e.g., `AUTH0_TV_BROWSER=firefox`)
+- [ ] Use access_token instead of refresh token. Configurable.
+- [ ] MCP wrapper?

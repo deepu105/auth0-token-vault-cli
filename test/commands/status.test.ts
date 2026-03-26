@@ -3,6 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { CredentialStore } from '../../src/store/credential-store.js';
+import { resolveStorageBackend } from '../../src/utils/config.js';
 import { mockTokenResponse } from '../mocks/handlers.js';
 
 describe('status command data', () => {
@@ -56,6 +57,12 @@ describe('status command data', () => {
 
     const connections = await store.listConnections();
     expect(connections).toContain('google-oauth2');
+  });
+
+  it('resolveStorageBackend returns the active backend type', () => {
+    // The status command uses resolveStorageBackend() to show the storage type
+    const backend = resolveStorageBackend();
+    expect(['keyring', 'file']).toContain(backend);
   });
 
   it('never exposes raw token values in status output data', async () => {

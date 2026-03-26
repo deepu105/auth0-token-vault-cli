@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { mergeConfigFromEnvAndStore, requireConfig, resolveStorageBackend } from '../../src/utils/config.js';
+import { mergeConfigFromEnvAndStore, requireConfig, resolveBrowser, resolveStorageBackend } from '../../src/utils/config.js';
 import { CredentialStore } from '../../src/store/credential-store.js';
 
 // ── resolveStorageBackend ─────────────────────────────────────
@@ -28,6 +28,37 @@ describe('resolveStorageBackend', () => {
   it('throws on invalid env var value', () => {
     process.env.AUTH0_TV_STORAGE = 'invalid';
     expect(() => resolveStorageBackend()).toThrow('Invalid AUTH0_TV_STORAGE value "invalid"');
+  });
+});
+
+// ── resolveBrowser ────────────────────────────────────────────
+
+describe('resolveBrowser', () => {
+  const originalEnv = process.env.AUTH0_TV_BROWSER;
+
+  afterEach(() => {
+    if (originalEnv === undefined) delete process.env.AUTH0_TV_BROWSER;
+    else process.env.AUTH0_TV_BROWSER = originalEnv;
+  });
+
+  it('returns undefined when no flag or env var', () => {
+    delete process.env.AUTH0_TV_BROWSER;
+    expect(resolveBrowser()).toBeUndefined();
+  });
+
+  it('returns env var value when set', () => {
+    process.env.AUTH0_TV_BROWSER = 'firefox';
+    expect(resolveBrowser()).toBe('firefox');
+  });
+
+  it('flag takes precedence over env var', () => {
+    process.env.AUTH0_TV_BROWSER = 'firefox';
+    expect(resolveBrowser('google-chrome')).toBe('google-chrome');
+  });
+
+  it('returns flag value when no env var', () => {
+    delete process.env.AUTH0_TV_BROWSER;
+    expect(resolveBrowser('firefox')).toBe('firefox');
   });
 });
 

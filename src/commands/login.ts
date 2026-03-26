@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import chalk from 'chalk';
-import type { Auth0Config } from '../utils/config.js';
+import { type Auth0Config, resolveBrowser } from '../utils/config.js';
 import { resolveConfigWithPrompts } from '../utils/prompt.js';
 import { output, outputError } from '../utils/output.js';
 import { EXIT_GENERAL, EXIT_NETWORK_ERROR } from '../utils/exit-codes.js';
@@ -37,7 +37,9 @@ export function registerLoginCommand(program: Command) {
           );
         }
 
-        const tokens = await runPkceFlow({ config });
+        const globals = cmd.optsWithGlobals();
+        const browser = resolveBrowser(globals.browser);
+        const tokens = await runPkceFlow({ config, browser });
 
         await store.saveAuth0Tokens({
           accessToken: tokens.access_token,

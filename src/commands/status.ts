@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { jwtDecode } from 'jwt-decode';
 import { output } from '../utils/output.js';
 import { CredentialStore } from '../store/credential-store.js';
-import { mergeConfigFromEnvAndStore } from '../utils/config.js';
+import { mergeConfigFromEnvAndStore, resolveStorageBackend } from '../utils/config.js';
 
 interface IdTokenClaims {
   sub?: string;
@@ -47,11 +47,13 @@ export function registerStatusCommand(program: Command) {
 
       const expired = Date.now() >= auth0Tokens.expiresAt;
       const connections = await store.listConnections();
+      const storage = resolveStorageBackend();
 
       const data = {
         loggedIn: !expired,
         domain: config.domain ?? null,
         clientId: config.clientId ?? null,
+        storage,
         user: {
           email: user.email ?? null,
           name: user.name ?? null,
@@ -68,6 +70,7 @@ export function registerStatusCommand(program: Command) {
         `  Client ID: ${config.clientId ?? 'n/a'}`,
         `  User:    ${user.name ?? user.email ?? user.sub ?? 'unknown'}`,
         `  Email:   ${user.email ?? 'n/a'}`,
+        `  Storage: ${storage}`,
         `  Session: ${expired ? chalk.yellow('expired') : chalk.green('active')}`,
         '',
         connections.length > 0

@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import chalk from 'chalk';
-import { requireConfig } from '../utils/config.js';
+import { requireConfig, resolveBrowser } from '../utils/config.js';
 import { output, outputError } from '../utils/output.js';
 import { EXIT_AUTH_REQUIRED, EXIT_GENERAL, EXIT_INVALID_INPUT } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
@@ -13,8 +13,10 @@ const SERVICE_MAP: Record<string, { connection: string; connectionScope: string 
   gmail: {
     connection: 'google-oauth2',
     connectionScope: [
-      'https://www.googleapis.com/auth/gmail.modify',
+      'https://www.googleapis.com/auth/gmail.readonly',
+      'https://www.googleapis.com/auth/gmail.send',
       'https://www.googleapis.com/auth/gmail.compose',
+      'https://www.googleapis.com/auth/gmail.modify',
       'https://www.googleapis.com/auth/gmail.labels',
     ].join(' '),
   },
@@ -62,11 +64,15 @@ export function registerConnectCommand(program: Command) {
           cmd
         );
 
+        const globals = cmd.optsWithGlobals();
+        const browser = resolveBrowser(globals.browser);
+
         const tokens = await runPkceFlow({
           config,
           connection: mapping.connection,
           connectionScope: mapping.connectionScope,
           extraParams: { access_type: 'offline', prompt: 'consent' },
+          browser,
         });
 
         // Save updated Auth0 tokens from the connect flow
