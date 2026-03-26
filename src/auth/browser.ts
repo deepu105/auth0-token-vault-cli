@@ -25,13 +25,23 @@ export async function bindServer(server: Server): Promise<number> {
   );
 }
 
+/** Escape HTML special characters to prevent XSS */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /** Generate a simple HTML page with a title, message, and auto-close script */
 export function htmlPage(title: string, message: string): string {
   return `<!DOCTYPE html>
 <html><head><title>Auth0 Token Vault CLI</title></head>
 <body style="font-family:system-ui;text-align:center;padding:2em">
-<h2>${title}</h2>
-<p>${message}</p>
+<h2>${escapeHtml(title)}</h2>
+<p>${escapeHtml(message)}</p>
 <script>window.close()</script>
 </body></html>`;
 }
