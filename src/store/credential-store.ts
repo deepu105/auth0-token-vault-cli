@@ -2,8 +2,9 @@ import { readFile, writeFile, mkdir, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { log } from '../utils/logger.js';
-import { resolveStorageBackend } from '../utils/config.js';
+import { resolveStorageBackend, type Auth0Config } from '../utils/config.js';
 import type { Auth0Tokens, ConnectionToken, CredentialData, StoredConfig } from './types.js';
+import { refreshAuth0Token } from '../auth/token-refresh.js';
 import type { CredentialBackend } from './backend.js';
 import { KeyringBackend } from './keyring-backend.js';
 
@@ -144,14 +145,33 @@ export class CredentialStore {
 
   // ── Read ──────────────────────────────────────────────────────
 
-  async getAuth0Token(): Promise<string | null> {
+  async getAuth0Token(config?: Auth0Config): Promise<string | null> {
     const tokens = await this.backend.getAuth0Tokens();
     if (!tokens) return null;
     if (this.isExpired(tokens.expiresAt)) {
       log('auth0 access token expired');
+      if (config && tokens.refreshToken) {
+        return this.refreshAndSave(config, tokens.refreshToken);
+      }
       return null;
     }
     return tokens.accessToken;
+  }
+
+  /**
+   * Refresh the Auth0 access token using the stored refresh token,
+   * persist the new tokens, and return the new access token.
+   * Returns null if the refresh fails (caller should prompt re-login).
+   */
+  private async refreshAndSave(config: Auth0Config, refreshToken: string): Promise<string | null> {
+    try {
+      const newTokens = await refreshAuth0Token(config, refreshToken);
+      await this.saveAuth0Tokens(newTokens);
+      return newTokens.accessToken;
+    } catch (err) {
+      log('auto-refresh failed: %s', err instanceof Error ? err.message : err);
+      return null;
+    }
   }
 
   async getAuth0Tokens(): Promise<Auth0Tokens | null> {

@@ -46,7 +46,7 @@ export function registerConnectCommand(program: Command) {
         const config = await requireConfig(store);
 
         // Must be logged in first
-        const auth0Token = await store.getAuth0Token();
+        const auth0Token = await store.getAuth0Token(config);
         if (!auth0Token) {
           outputError(
             { code: 'auth_required', message: 'Not logged in. Run `auth0-tv login` first.' },
