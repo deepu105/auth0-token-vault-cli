@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import chalk from 'chalk';
-import { type Auth0Config, resolveBrowser } from '../utils/config.js';
+import { resolveBrowser } from '../utils/config.js';
 import { resolveConfigWithPrompts } from '../utils/prompt.js';
 import { output, outputError } from '../utils/output.js';
 import { EXIT_GENERAL, EXIT_NETWORK_ERROR } from '../utils/exit-codes.js';

@@ -1,6 +1,5 @@
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
-import { log } from '../../utils/logger.js';
 import type {
   EmailSummary,
   EmailFull,

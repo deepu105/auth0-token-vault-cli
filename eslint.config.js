@@ -37,7 +37,7 @@ export default defineConfig([
       'no-unneeded-ternary': 'warn',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/consistent-type-imports': ['warn', { prefer: 'type-imports' }],
       '@typescript-eslint/ban-ts-comment': [
         'error',

@@ -1,11 +1,5 @@
 import chalk from 'chalk';
-import type {
-  EmailSummary,
-  EmailFull,
-  SearchResult,
-  DraftSummary,
-  LabelInfo,
-} from './types.js';
+import type { EmailFull, SearchResult, DraftSummary, LabelInfo } from './types.js';
 
 export function formatSearchResult(result: SearchResult): string {
   if (result.messages.length === 0) {

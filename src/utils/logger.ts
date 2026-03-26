@@ -11,8 +11,10 @@ debug.log = (...args: unknown[]) => {
 export const logError = (msg: string, error?: unknown) => {
   const formatted = `[ERROR:auth0-tv] ${msg}`;
   if (error) {
+    // eslint-disable-next-line no-console
     console.error(formatted, error);
   } else {
+    // eslint-disable-next-line no-console
     console.error(formatted);
   }
 };
