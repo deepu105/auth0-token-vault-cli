@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import { createInterface } from 'node:readline/promises';
-import { readFile } from 'node:fs/promises';
+import { readFile, realpath } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { requireConfig } from '../../utils/config.js';
 import { outputError } from '../../utils/output.js';
 import {
@@ -19,7 +20,7 @@ const CONNECTION = 'google-oauth2';
  * Create a GmailClient wired to the credential store + token exchange.
  * Exits with appropriate codes if auth/authz fails.
  */
-export async function createGmailClient(cmd: Command): Promise<GmailClient> {
+export async function createGmailClient(_cmd: Command): Promise<GmailClient> {
   const store = new CredentialStore();
   const config = await requireConfig(store);
 
@@ -103,7 +104,14 @@ export async function resolveBody(opts: {
   if (opts.body) return opts.body;
 
   if (opts.bodyFile) {
-    return readFile(opts.bodyFile, 'utf-8');
+    // Resolve to absolute and follow symlinks, then verify the real path
+    // stays under the current working directory to prevent path traversal.
+    const cwd = process.cwd();
+    const resolved = await realpath(resolve(cwd, opts.bodyFile));
+    if (!resolved.startsWith(`${cwd}/`) && resolved !== cwd) {
+      throw new Error(`--body-file path must be within the working directory. Resolved to: ${resolved}`);
+    }
+    return readFile(resolved, 'utf-8');
   }
 
   // Read from stdin if piped
