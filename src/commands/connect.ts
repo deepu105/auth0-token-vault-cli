@@ -4,21 +4,21 @@ import { requireConfig, resolveBrowser } from '../utils/config.js';
 import { output, outputError } from '../utils/output.js';
 import { EXIT_AUTH_REQUIRED, EXIT_GENERAL, EXIT_INVALID_INPUT } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
-import { runPkceFlow } from '../auth/pkce-flow.js';
+import { runConnectedAccountFlow } from '../auth/connected-accounts.js';
 import { exchangeForConnectionToken } from '../auth/token-exchange.js';
 import { logError } from '../utils/logger.js';
 
 /** Map user-friendly service names to Auth0 connection identifiers and scopes */
-const SERVICE_MAP: Record<string, { connection: string; connectionScope: string }> = {
+const SERVICE_MAP: Record<string, { connection: string; scopes: string[] }> = {
   gmail: {
     connection: 'google-oauth2',
-    connectionScope: [
+    scopes: [
       'https://www.googleapis.com/auth/gmail.readonly',
       'https://www.googleapis.com/auth/gmail.send',
       'https://www.googleapis.com/auth/gmail.compose',
       'https://www.googleapis.com/auth/gmail.modify',
       'https://www.googleapis.com/auth/gmail.labels',
-    ].join(' '),
+    ],
   },
 };
 
@@ -45,9 +45,9 @@ export function registerConnectCommand(program: Command) {
         const store = new CredentialStore();
         const config = await requireConfig(store);
 
-        // Must be logged in first
-        const auth0Token = await store.getAuth0Token(config);
-        if (!auth0Token) {
+        // Must be logged in first — need refresh token for MRRT exchange
+        const auth0Tokens = await store.getAuth0Tokens();
+        if (!auth0Tokens?.refreshToken) {
           outputError(
             { code: 'auth_required', message: 'Not logged in. Run `auth0-tv login` first.' },
             cmd
@@ -67,29 +67,34 @@ export function registerConnectCommand(program: Command) {
         const globals = cmd.optsWithGlobals();
         const browser = resolveBrowser(globals.browser);
 
-        const tokens = await runPkceFlow({
+        // Use Connected Accounts API (My Account API) to properly link the
+        // external account and store its tokens in Auth0 Token Vault.
+        const result = await runConnectedAccountFlow({
           config,
+          refreshToken: auth0Tokens.refreshToken,
           connection: mapping.connection,
-          connectionScope: mapping.connectionScope,
-          extraParams: { access_type: 'offline', prompt: 'consent' },
+          scopes: mapping.scopes,
           browser,
         });
 
-        // Save updated Auth0 tokens from the connect flow
-        await store.saveAuth0Tokens({
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token,
-          idToken: tokens.id_token,
-          expiresAt: Date.now() + tokens.expires_in * 1000,
-        });
+        output(
+          {
+            status: 'account_linked',
+            id: result.id,
+            connection: result.connection,
+            scopes: result.scopes,
+          },
+          chalk.green(`Linked ${serviceLower} account (${result.connection}).`),
+          cmd
+        );
 
-        // Immediately exchange for a connection token to validate and persist the connection
+        // Immediately exchange for a connection token to validate the link
         let exchangeFailed = false;
         try {
           await exchangeForConnectionToken(config, store, mapping.connection);
         } catch (exchangeErr) {
           exchangeFailed = true;
-          logError('Token exchange after connect failed (connection may still work)', exchangeErr);
+          logError('Token exchange after connect failed', exchangeErr);
           const errMsg = exchangeErr instanceof Error ? exchangeErr.message : String(exchangeErr);
           output(
             { status: 'warning', message: errMsg },

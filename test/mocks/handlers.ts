@@ -46,6 +46,40 @@ export const mockExchangeResponse = {
   scope: 'https://www.googleapis.com/auth/gmail.modify',
 };
 
+/** Mock My Account API token (returned via refresh_token grant with /me/ audience) */
+export const mockMyAccountToken = 'mock-my-account-token';
+
+/** Mock Connected Accounts API responses */
+export const mockConnectInitResponse = {
+  auth_session: 'mock-auth-session-123',
+  connect_uri: 'https://test.auth0.com/authorize?ticket=mock-ticket',
+  connect_params: { ticket: 'mock-ticket' },
+  expires_in: 300,
+};
+
+export const mockConnectCompleteResponse = {
+  id: 'ca_abc123',
+  connection: 'google-oauth2',
+  scopes: ['https://www.googleapis.com/auth/gmail.modify'],
+  access_type: 'offline',
+  created_at: '2026-03-26T00:00:00.000Z',
+};
+
+export const mockListAccountsResponse = {
+  accounts: [
+    {
+      id: 'ca_abc123',
+      connection: 'google-oauth2',
+      scopes: ['https://www.googleapis.com/auth/gmail.modify'],
+    },
+    {
+      id: 'ca_def456',
+      connection: 'slack',
+      scopes: ['chat:write'],
+    },
+  ],
+};
+
 /** Parse request body as either JSON or form-encoded (openid-client uses form-encoded) */
 export async function parseBody(request: Request): Promise<Record<string, string>> {
   const ct = request.headers.get('content-type') ?? '';
@@ -111,5 +145,41 @@ export const handlers = [
       { error: 'unsupported_grant_type', error_description: 'Unsupported grant type' },
       { status: 400 }
     );
+  }),
+
+  // My Account API: Initiate Connected Account
+  http.post(`https://${AUTH0_DOMAIN}/me/v1/connected-accounts/connect`, async ({ request }) => {
+    const auth = request.headers.get('authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+    return HttpResponse.json(mockConnectInitResponse);
+  }),
+
+  // My Account API: Complete Connected Account
+  http.post(`https://${AUTH0_DOMAIN}/me/v1/connected-accounts/complete`, async ({ request }) => {
+    const auth = request.headers.get('authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+    return HttpResponse.json(mockConnectCompleteResponse);
+  }),
+
+  // My Account API: List Connected Accounts
+  http.get(`https://${AUTH0_DOMAIN}/me/v1/connected-accounts/accounts`, ({ request }) => {
+    const auth = request.headers.get('authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+    return HttpResponse.json(mockListAccountsResponse);
+  }),
+
+  // My Account API: Delete Connected Account
+  http.delete(`https://${AUTH0_DOMAIN}/me/v1/connected-accounts/accounts/:accountId`, ({ request }) => {
+    const auth = request.headers.get('authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+    return new HttpResponse(null, { status: 204 });
   }),
 ];
