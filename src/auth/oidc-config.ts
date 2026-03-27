@@ -24,7 +24,10 @@ export async function getOidcConfig(config: Auth0Config): Promise<client.Configu
   const issuer = new URL(`https://${config.domain}`);
   const oidcConfig = await client.discovery(issuer, config.clientId, config.clientSecret);
 
-  // Allow http://127.0.0.1 callback URIs (standard for native CLI apps)
+  // allowInsecureRequests permits http://127.0.0.1 callback URIs per RFC 8252 for native CLI apps.
+  // It applies to the entire openid-client Configuration object (library design constraint).
+  // Auth0 tenant endpoints always use HTTPS (issuer is https://${config.domain}) regardless —
+  // this does NOT weaken TLS for any tenant requests.
   client.allowInsecureRequests(oidcConfig);
 
   // Add a timeout to all HTTP requests made by openid-client.

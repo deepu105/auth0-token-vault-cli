@@ -24,7 +24,7 @@ export class TokenExchangeError extends Error {
   }
 }
 
-export interface ExchangeOptions {
+interface ExchangeOptions {
   /** Optional login hint for matching user across systems. */
   loginHint?: string;
   /** Scopes to validate on the returned token. If any are missing, throws EXIT_AUTHZ_REQUIRED. */

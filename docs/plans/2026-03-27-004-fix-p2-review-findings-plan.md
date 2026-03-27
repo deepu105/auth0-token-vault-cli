@@ -1,7 +1,7 @@
 ---
 title: "fix: Address P2 review findings — security hardening, code duplication, type safety, and test coverage"
 type: fix
-status: active
+status: completed
 date: 2026-03-27
 origin: REVIEW.md
 ---

@@ -120,8 +120,10 @@ export async function resolveBody(opts: {
   if (opts.body) return opts.body;
 
   if (opts.bodyFile) {
-    // Resolve to absolute and follow symlinks, then verify the real path
-    // stays under the current working directory to prevent path traversal.
+    // Resolve to absolute and follow symlinks via realpath(), then verify the
+    // real path stays under cwd. realpath() resolves symlinks to their target,
+    // so a symlink inside cwd pointing outside will resolve to the external path
+    // and be correctly rejected by the startsWith check below.
     const cwd = process.cwd();
     const resolved = await realpath(resolve(cwd, opts.bodyFile));
     if (!resolved.startsWith(`${cwd}/`) && resolved !== cwd) {

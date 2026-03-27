@@ -33,6 +33,17 @@ interface ConnectCompleteResponse {
 }
 
 /**
+ * Check a fetch Response and throw with a descriptive message if not OK.
+ */
+async function throwOnHttpError(res: Response, context: string): Promise<void> {
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    const errDesc = (errBody as Record<string, string>).message ?? `HTTP ${res.status}`;
+    throw new Error(`${context}: ${errDesc}`);
+  }
+}
+
+/**
  * Get a My Account API access token by exchanging the user's refresh token
  * with the MRRT (Multi-Resource Refresh Token) audience.
  * Uses openid-client's refreshTokenGrant with additional audience/scope parameters.
@@ -80,11 +91,7 @@ async function initiateConnect(
     signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
   });
 
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({}));
-    const errDesc = (errBody as Record<string, string>).message ?? `HTTP ${res.status}`;
-    throw new Error(`Failed to initiate connected account: ${errDesc}`);
-  }
+  await throwOnHttpError(res, 'Failed to initiate connected account');
 
   return (await res.json()) as ConnectInitResponse;
 }
@@ -115,11 +122,7 @@ async function completeConnect(
     signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
   });
 
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({}));
-    const errDesc = (errBody as Record<string, string>).message ?? `HTTP ${res.status}`;
-    throw new Error(`Failed to complete connected account: ${errDesc}`);
-  }
+  await throwOnHttpError(res, 'Failed to complete connected account');
 
   return (await res.json()) as ConnectCompleteResponse;
 }
@@ -298,11 +301,7 @@ export async function listConnectedAccounts(
     signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
   });
 
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({}));
-    const errDesc = (errBody as Record<string, string>).message ?? `HTTP ${res.status}`;
-    throw new Error(`Failed to list connected accounts: ${errDesc}`);
-  }
+  await throwOnHttpError(res, 'Failed to list connected accounts');
 
   const data = (await res.json()) as { accounts: ConnectedAccountResult[] };
   return data.accounts ?? [];
@@ -327,9 +326,5 @@ export async function deleteConnectedAccount(
     }
   );
 
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({}));
-    const errDesc = (errBody as Record<string, string>).message ?? `HTTP ${res.status}`;
-    throw new Error(`Failed to delete connected account: ${errDesc}`);
-  }
+  await throwOnHttpError(res, 'Failed to delete connected account');
 }

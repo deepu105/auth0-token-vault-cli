@@ -52,6 +52,10 @@ export async function resolveConfigWithPrompts(
   }
 }
 
+/** Strip protocol prefix and trailing slashes from a domain string.
+ * Note: No regex validation is applied here. The result is always used in
+ * `new URL(`https://${domain}`)` constructors downstream, which reject
+ * malformed domains, providing defense-in-depth against injection. */
 function cleanDomain(domain: string): string {
   return domain.replace(/^https?:\/\//, '').replace(/\/+$/, '');
 }

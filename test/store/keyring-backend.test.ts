@@ -203,9 +203,9 @@ describe('KeyringBackend', () => {
     expect(keytar.deletePassword).toHaveBeenCalledWith(SERVICE, 'CONNECTION:google-oauth2');
   });
 
-  it('clear does not throw when keyring errors', async () => {
+  it('clear throws when keyring errors', async () => {
     vi.mocked(keytar.findCredentials).mockRejectedValue(new Error('no keyring'));
-    await expect(backend.clear()).resolves.toBeUndefined();
+    await expect(backend.clear()).rejects.toThrow('no keyring');
   });
 
   // ── Error handling ────────────────────────────────────────────

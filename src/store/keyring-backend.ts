@@ -103,6 +103,7 @@ export class KeyringBackend implements CredentialBackend {
       log('keyring credentials cleared');
     } catch (err) {
       log('failed to clear keyring credentials: %O', err);
+      throw err;
     }
   }
 
@@ -118,18 +119,7 @@ export class KeyringBackend implements CredentialBackend {
   private async set(account: string, value: string): Promise<void> {
     try {
       await keytar.setPassword(SERVICE_NAME, account, value);
-      // Round-trip verification: read back and compare
-      const readBack = await keytar.getPassword(SERVICE_NAME, account);
-      if (readBack !== value) {
-        log(
-          'keyring ROUND-TRIP MISMATCH for %s: wrote %d chars, read back %s',
-          account,
-          value.length,
-          readBack === null ? 'null' : `${readBack.length} chars`
-        );
-      } else {
-        log('keyring set verified for %s (%d chars)', account, value.length);
-      }
+      log('keyring set for %s (%d chars)', account, value.length);
     } catch (err) {
       log('keyring set failed for %s: %O', account, err);
       throw err;

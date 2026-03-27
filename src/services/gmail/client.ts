@@ -1,4 +1,4 @@
-import { google } from 'googleapis';
+import { google, type gmail_v1 } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import type {
   EmailSummary,
@@ -250,11 +250,11 @@ function extractHeaders(
   };
 }
 
-function parseEmailSummary(data: any): EmailSummary {
+function parseEmailSummary(data: gmail_v1.Schema$Message): EmailSummary {
   const headers = extractHeaders(data.payload?.headers ?? []);
   return {
-    id: data.id,
-    threadId: data.threadId,
+    id: data.id!,
+    threadId: data.threadId!,
     snippet: data.snippet ?? '',
     from: headers.from,
     subject: headers.subject,
@@ -263,13 +263,13 @@ function parseEmailSummary(data: any): EmailSummary {
   };
 }
 
-function parseEmailFull(data: any): EmailFull {
+function parseEmailFull(data: gmail_v1.Schema$Message): EmailFull {
   const headers = extractHeaders(data.payload?.headers ?? []);
 
   let body = '';
   const attachments: AttachmentMeta[] = [];
 
-  function walk(part: any) {
+  function walk(part: gmail_v1.Schema$MessagePart) {
     if (!part) return;
 
     if (part.mimeType === 'text/plain' && part.body?.data && !body) {
@@ -292,7 +292,9 @@ function parseEmailFull(data: any): EmailFull {
     }
   }
 
-  walk(data.payload);
+  if (data.payload) {
+    walk(data.payload);
+  }
 
   // Fallback: single-part message
   if (!body && data.payload?.body?.data) {
@@ -300,8 +302,8 @@ function parseEmailFull(data: any): EmailFull {
   }
 
   return {
-    id: data.id,
-    threadId: data.threadId,
+    id: data.id!,
+    threadId: data.threadId!,
     headers,
     body,
     labelIds: data.labelIds ?? [],
