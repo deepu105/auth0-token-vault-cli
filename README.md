@@ -4,42 +4,65 @@ Access third-party [services](https://auth0.com/ai/docs/integrations/overview) (
 
 ## Auth0 Tenant Setup
 
-1. Create an [Auth0 Account](https://auth0.com/signup?onboard_app=auth_for_aa&ocid=701KZ000000cXXxYAM-aPA4z0000008OZeGAM).
+### Prerequisites
 
-2. Create an Auth0 Application. Go to your [Auth0 Dashboard](https://manage.auth0.com/dashboard) to create a new Auth0 Application.
-   1. Navigate to **Applications** > **Applications** in the left sidebar.
-   2. Click the **Create Application** button in the top right.
-   3. In the pop-up select **Regular Web Applications** and click **Create**.
-   4. Once the Application is created, switch to the **Settings** tab.
-   5. Scroll down to the **Application URIs** section.
-   6. Set **Allowed Callback URLs** to include the default callback range:
-      `http://127.0.0.1:18484/callback`, `http://127.0.0.1:18485/callback`,
-      `http://127.0.0.1:18486/callback`, `http://127.0.0.1:18487/callback`,
-      `http://127.0.0.1:18488/callback`, `http://127.0.0.1:18489/callback`.
-      If you plan to use `--port`, also add that callback URL.
-   7. Set **Allowed Logout URLs** to include:
-      `http://127.0.0.1:18484`, `http://127.0.0.1:18485`, `http://127.0.0.1:18486`,
-      `http://127.0.0.1:18487`, `http://127.0.0.1:18488`, `http://127.0.0.1:18489`.
-      If you plan to use `--port`, also add that logout URL.
-   8. Scroll down to the **Refresh Token Rotation** section and disable the **Allow Refresh Token Rotation** option.
-   9. Scroll down and expand the **Advanced** section. Switch to the **Grant Types** tab and enable the **Token Vault** grant type.\
-   10. Click **Save** in the bottom right to save your changes.
+- An [Auth0 Account](https://auth0.com/signup?onboard_app=auth_for_aa&ocid=701KZ000000cXXxYAM-aPA4z0000008OZeGAM)
+- [Auth0 CLI](https://github.com/auth0/auth0-cli) installed and logged in
+- At least one [connection](https://auth0.com/ai/docs/integrations/overview) configured (e.g. [Google](https://auth0.com/ai/docs/integrations/google))
 
-3. Configure [My Account API](https://auth0.com/docs/manage-users/my-account-api). The Connected Accounts flow uses the My Account API to create and manage connected accounts for a user across supported external providers.
-   1. Navigate to [**Applications** > **APIs**](https://manage.auth0.com/#/apis), locate the **My Account API** banner, and select **Activate** to activate the Auth0 My Account API.
-   2. Once activated, select **Auth0 My Account API** and then select the **Application Access** tab.
-   3. Find your client application and select **Edit** to configure its [application access policies](https://www.auth0.com//docs/get-started/apis/api-access-policies-for-applications).
-   4. Select **User Access** and under **Authorization**, select **Authorized**.
-   5. For the permissions, select **All the [Connected Accounts scopes](https://www.auth0.com/docs/manage-users/my-account-api#scope)** for the application.
-   6. Select **Save**. This creates a client grant that allows your client application to access the My Account API with the Connected Accounts scopes on the user's behalf.
-   7. Navigate to the **Settings** tab. Under **Access Settings**, select **Allow Skipping User Consent**.
+### Install the Auth0 CLI
 
-4. Define a Multi-Resource Refresh Token policy for your Application. After your web application has been granted access to the My Account API, you will also need to leverage the [Multi-Resource Refresh Token](https://www.auth0.com/docs/manage-users/my-account-api#scope) feature, which enables the refresh token delivered to your application to also obtain an access token to call the My Account API. You can quickly define a [refresh token policy](https://auth0.com/docs/secure/tokens/refresh-tokens/multi-resource-refresh-token/configure-and-implement-multi-resource-refresh-token) for your application to use when requesting access tokens for the My Account API by doing the following:
-   1. Navigate to **Applications** > **Applications** and select your client application.
-   2. On the **Settings** tab, scroll down to the **Multi-Resource Refresh Token** section.
-   3. Select **Edit Configuration** and then enable the **MRRT** toggle for the **Auth0 My Account API**.
+```bash
+# macOS
+brew tap auth0/auth0-cli && brew install auth0
 
-5. Configure [Google Social Integration](https://auth0.com/ai/docs/integrations/google). Add any other [services](https://auth0.com/ai/docs/integrations/overview) similarly.
+# Other platforms — see https://github.com/auth0/auth0-cli
+```
+
+### Configure Token Vault
+
+Run the interactive setup wizard. It logs you into Auth0 CLI then creates and configures an Auth0 application with Token Vault, My Account API, MRRT, and client grants — everything that `auth0-tv` needs:
+
+```bash
+npx configure-auth0-token-vault
+```
+
+1. When asked, **How would you like to configure the application?**, select **Create a new application**. If you already have an application you'd like to use, select **Use an existing application** and follow the prompts to set it up for Token Vault.
+2. If asked, **Select application type**, choose **Regular Web Application**.
+3. When asked, **Which Token Vault configuration do you need?**, select **Refresh Token Exchange**.
+
+The wizard will:
+
+- Configures the Regular Web Application with the necessary settings for Token Vault
+- Enable the Token Vault grant type
+- Activate the My Account API with Connected Accounts scopes
+- Create the necessary client grants
+- Configure Multi-Resource Refresh Token (MRRT) policies
+- Enable your social connections on the application
+
+Note the **Client ID** from the output — you'll need them for `auth0-tv login`.
+
+> **Tip:** The wizard is idempotent — safe to re-run if you need to update the configuration.
+
+### Configure callback URLs
+
+After running the wizard, configure your application's callback and logout URLs for `auth0-tv` using the Auth0 CLI. Replace `<APP_ID>` with the Client ID from the previous step:
+
+```bash
+auth0 apps update <APP_ID> \
+  --callbacks "http://127.0.0.1:18484/callback,http://127.0.0.1:18485/callback,http://127.0.0.1:18486/callback,http://127.0.0.1:18487/callback,http://127.0.0.1:18488/callback,http://127.0.0.1:18489/callback" \
+  --logout-urls "http://127.0.0.1:18484,http://127.0.0.1:18485,http://127.0.0.1:18486,http://127.0.0.1:18487,http://127.0.0.1:18488,http://127.0.0.1:18489"
+```
+
+If you plan to use a custom `--port`, add that port's URLs as well.
+
+### Get Client Secret
+
+Retrieve your application's client secret (needed during `auth0-tv login`):
+
+```bash
+auth0 apps show <APP_ID> --reveal-secrets
+```
 
 ## Installation
 
@@ -118,7 +141,7 @@ Set environment variables **or** run `auth0-tv login`, which prompts for the req
 | `AUTH0_TV_OUTPUT`     | Set to `json` to auto-enable JSON output for agents |
 | `AUTH0_TV_STORAGE`    | Credential backend: `keyring` (default) or `file`   |
 | `AUTH0_TV_BROWSER`    | Browser to open for auth flows (e.g. `firefox`)     |
-| `AUTH0_TV_PORT`       | Port for the local OAuth callback server             |
+| `AUTH0_TV_PORT`       | Port for the local OAuth callback server            |
 
 ## Commands
 
@@ -156,12 +179,12 @@ auth0-tv gmail draft delete <draftId>
 
 ### Global Flags
 
-| Flag                  | Description                                                           |
-| --------------------- | --------------------------------------------------------------------- |
-| `--json`              | Output structured JSON (recommended for agents/scripts)               |
-| `--confirm` / `--yes` | Skip destructive-action confirmation prompts                          |
-| `--browser <app>`     | Browser for auth flows (e.g. `firefox`, `google-chrome`)              |
-| `--port <number>`     | Port for the local OAuth callback server (default: auto 18484-18489)  |
+| Flag                  | Description                                                          |
+| --------------------- | -------------------------------------------------------------------- |
+| `--json`              | Output structured JSON (recommended for agents/scripts)              |
+| `--confirm` / `--yes` | Skip destructive-action confirmation prompts                         |
+| `--browser <app>`     | Browser for auth flows (e.g. `firefox`, `google-chrome`)             |
+| `--port <number>`     | Port for the local OAuth callback server (default: auto 18484-18489) |
 
 Add `--json` for structured output:
 
@@ -230,4 +253,3 @@ MIT
 - [ ] MCP wrapper?
 - [ ] keytar replacement? Maybe with @napi-rs/keyring
 - [ ] lockfile for filestore?
-- [ ] Use teh lib from sam for setup
