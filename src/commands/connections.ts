@@ -5,10 +5,7 @@ import { CredentialStore, EXPIRY_BUFFER_MS } from '../store/credential-store.js'
 import { listConnectedAccounts } from '../auth/connected-accounts.js';
 import { requireConfig } from '../utils/config.js';
 import { logError } from '../utils/logger.js';
-
-const CONNECTION_TO_SERVICE: Record<string, string> = {
-  'google-oauth2': 'gmail',
-};
+import { getServiceForConnection } from '../utils/service-registry.js';
 
 function localTokenStatus(entry: { expiresAt: number } | null): 'valid' | 'expired' | 'none' {
   if (!entry) return 'none';
@@ -51,7 +48,7 @@ export function registerConnectionsCommand(program: Command) {
             const status = localTokenStatus(localEntry);
             return {
               connection: acct.connection,
-              service: CONNECTION_TO_SERVICE[acct.connection] ?? acct.connection,
+              service: getServiceForConnection(acct.connection) ?? acct.connection,
               id: acct.id,
               scopes: acct.scopes,
               tokenStatus: status,
@@ -90,7 +87,7 @@ export function registerConnectionsCommand(program: Command) {
             const status = localTokenStatus(entry);
             return {
               connection: conn,
-              service: CONNECTION_TO_SERVICE[conn] ?? conn,
+              service: getServiceForConnection(conn) ?? conn,
               scopes: entry?.scopes ?? [],
               tokenStatus: status,
               remote: false,
@@ -100,13 +97,15 @@ export function registerConnectionsCommand(program: Command) {
 
         const humanLines = entries.map((e) => {
           const tokenLabel =
-            e.tokenStatus === 'valid'
-              ? chalk.green('valid')
-              : chalk.yellow('expired');
+            e.tokenStatus === 'valid' ? chalk.green('valid') : chalk.yellow('expired');
           return `  ${chalk.cyan(e.service)} (${e.connection}) — local token: ${tokenLabel}`;
         });
 
-        output({ connections: entries }, `Connected services (local only):\n${humanLines.join('\n')}`, cmd);
+        output(
+          { connections: entries },
+          `Connected services (local only):\n${humanLines.join('\n')}`,
+          cmd
+        );
       }
     });
 }

@@ -27,7 +27,10 @@ const program = new Command()
   .option('--confirm', 'Skip destructive-action confirmation prompts (alias: --yes)')
   .option('--yes', 'Skip destructive-action confirmation prompts (alias: --confirm)')
   .option('--browser <app>', 'Browser to open for auth flows (e.g. firefox, google-chrome)')
-  .option('--port <number>', 'Port for the local OAuth callback server (default: auto-select from 18484-18489)')
+  .option(
+    '--port <number>',
+    'Port for the local OAuth callback server (default: auto-select from 18484-18489)'
+  )
   .addHelpText(
     'before',
     `

@@ -1,5 +1,5 @@
 ---
-title: "feat: Show remote connections with local indicator, local-first disconnect with remote flag"
+title: 'feat: Show remote connections with local indicator, local-first disconnect with remote flag'
 type: feat
 status: active
 date: 2026-03-27

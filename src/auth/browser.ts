@@ -5,7 +5,10 @@ import { log } from '../utils/logger.js';
 export const CALLBACK_PORTS = [18484, 18485, 18486, 18487, 18488, 18489];
 
 /** Try to bind a server to the first available port in the given list (defaults to CALLBACK_PORTS) */
-export async function bindServer(server: Server, ports: number[] = CALLBACK_PORTS): Promise<number> {
+export async function bindServer(
+  server: Server,
+  ports: number[] = CALLBACK_PORTS
+): Promise<number> {
   for (const port of ports) {
     try {
       await new Promise<void>((resolve, reject) => {
@@ -21,9 +24,7 @@ export async function bindServer(server: Server, ports: number[] = CALLBACK_PORT
     }
   }
   const rangeDesc =
-    ports.length === 1
-      ? `port ${ports[0]}`
-      : `port range ${ports[0]}-${ports[ports.length - 1]}`;
+    ports.length === 1 ? `port ${ports[0]}` : `port range ${ports[0]}-${ports[ports.length - 1]}`;
   throw new Error(`Could not bind callback server to any ${rangeDesc}`);
 }
 

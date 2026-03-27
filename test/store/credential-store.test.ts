@@ -142,13 +142,12 @@ describe('CredentialStore', () => {
 
   // ── Corrupt file handling ─────────────────────────────────────
 
-  it('handles corrupt credential file gracefully', async () => {
+  it('throws on corrupt credential file instead of silently losing data', async () => {
     const { writeFile: wf } = await import('node:fs/promises');
     await wf(join(tempDir, 'credentials.json'), 'not valid json');
 
-    // Should not throw, returns empty state
-    const token = await store.getAuth0Token();
-    expect(token).toBeNull();
+    // Must throw so callers know the file is corrupted rather than empty
+    await expect(store.getAuth0Token()).rejects.toThrow(SyntaxError);
   });
 
   // ── Config storage ───────────────────────────────────────────

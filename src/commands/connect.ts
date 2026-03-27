@@ -7,20 +7,7 @@ import { CredentialStore } from '../store/credential-store.js';
 import { runConnectedAccountFlow } from '../auth/connected-accounts.js';
 import { exchangeForConnectionToken } from '../auth/token-exchange.js';
 import { logError } from '../utils/logger.js';
-
-/** Map user-friendly service names to Auth0 connection identifiers and scopes */
-const SERVICE_MAP: Record<string, { connection: string; scopes: string[] }> = {
-  gmail: {
-    connection: 'google-oauth2',
-    scopes: [
-      'https://www.googleapis.com/auth/gmail.readonly',
-      'https://www.googleapis.com/auth/gmail.send',
-      'https://www.googleapis.com/auth/gmail.compose',
-      'https://www.googleapis.com/auth/gmail.modify',
-      'https://www.googleapis.com/auth/gmail.labels',
-    ],
-  },
-};
+import { getServiceEntry, getAvailableServices } from '../utils/service-registry.js';
 
 export function registerConnectCommand(program: Command) {
   program
@@ -28,13 +15,13 @@ export function registerConnectCommand(program: Command) {
     .description('Connect a third-party service (e.g. gmail)')
     .action(async (service: string, opts, cmd: Command) => {
       const serviceLower = service.toLowerCase();
-      const mapping = SERVICE_MAP[serviceLower];
+      const mapping = getServiceEntry(serviceLower);
 
       if (!mapping) {
         outputError(
           {
             code: 'invalid_service',
-            message: `Unknown service: ${service}. Available: ${Object.keys(SERVICE_MAP).join(', ')}`,
+            message: `Unknown service: ${service}. Available: ${getAvailableServices().join(', ')}`,
           },
           cmd
         );
@@ -58,11 +45,8 @@ export function registerConnectCommand(program: Command) {
         // Clear any stale cached connection token before re-authorizing
         await store.removeConnection(mapping.connection);
 
-        output(
-          { status: 'connecting', service: serviceLower },
-          `Connecting ${chalk.cyan(serviceLower)}... Opening browser for authorization.`,
-          cmd
-        );
+        // Progress message to stderr (human mode only — never to JSON stdout)
+        process.stderr.write(`Connecting ${serviceLower}... Opening browser for authorization.\n`);
 
         const globals = cmd.optsWithGlobals();
         const browser = resolveBrowser(globals.browser);
@@ -79,39 +63,31 @@ export function registerConnectCommand(program: Command) {
           port,
         });
 
-        output(
-          {
-            status: 'account_linked',
-            id: result.id,
-            connection: result.connection,
-            scopes: result.scopes,
-          },
-          chalk.green(`Linked ${serviceLower} account (${result.connection}).`),
-          cmd
-        );
-
         // Immediately exchange for a connection token to validate the link
-        let exchangeFailed = false;
+        let warning: string | undefined;
         try {
           await exchangeForConnectionToken(config, store, mapping.connection);
         } catch (exchangeErr) {
-          exchangeFailed = true;
           logError('Token exchange after connect failed', exchangeErr);
-          const errMsg = exchangeErr instanceof Error ? exchangeErr.message : String(exchangeErr);
-          output(
-            { status: 'warning', message: errMsg },
-            chalk.yellow(`Warning: Token exchange failed — ${errMsg}`),
-            cmd
-          );
+          warning = exchangeErr instanceof Error ? exchangeErr.message : String(exchangeErr);
+          process.stderr.write(chalk.yellow(`Warning: Token exchange failed — ${warning}\n`));
         }
 
-        if (!exchangeFailed) {
-          output(
-            { status: 'connected', service: serviceLower, connection: mapping.connection },
-            chalk.green(`Successfully connected ${serviceLower}!`),
-            cmd
-          );
-        }
+        // Single JSON-safe output with full result
+        output(
+          {
+            status: warning ? 'connected_with_warning' : 'connected',
+            service: serviceLower,
+            connection: result.connection,
+            id: result.id,
+            scopes: result.scopes,
+            ...(warning ? { warning } : {}),
+          },
+          warning
+            ? chalk.yellow(`Connected ${serviceLower} with warning: ${warning}`)
+            : chalk.green(`Successfully connected ${serviceLower}!`),
+          cmd
+        );
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         outputError({ code: 'connect_failed', message }, cmd);

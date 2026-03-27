@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { CredentialStore } from '../../src/store/credential-store.js';
+import { CredentialStore, EXPIRY_BUFFER_MS } from '../../src/store/credential-store.js';
 import { resolveStorageBackend } from '../../src/utils/config.js';
 import { mockTokenResponse } from '../mocks/handlers.js';
 
@@ -61,6 +61,35 @@ describe('status command data', () => {
     // The status command uses resolveStorageBackend() to show the storage type
     const backend = resolveStorageBackend();
     expect(['keyring', 'file']).toContain(backend);
+  });
+
+  it('treats tokens within the expiry buffer as expired (consistent with store)', async () => {
+    // Token expires in 1 minute — within the 2-minute EXPIRY_BUFFER_MS
+    await store.saveAuth0Tokens({
+      accessToken: 'at-soon',
+      expiresAt: Date.now() + 1 * 60 * 1000,
+    });
+
+    // The store considers this expired (within buffer)
+    const storeToken = await store.getAuth0Token();
+    expect(storeToken).toBeNull();
+
+    // Verify the buffer math: Date.now() >= expiresAt - EXPIRY_BUFFER_MS
+    const expiresAt = Date.now() + 1 * 60 * 1000;
+    const expired = Date.now() >= expiresAt - EXPIRY_BUFFER_MS;
+    expect(expired).toBe(true);
+  });
+
+  it('treats tokens outside the expiry buffer as valid', async () => {
+    // Token expires in 3 minutes — outside the 2-minute EXPIRY_BUFFER_MS
+    const expiresAt = Date.now() + 3 * 60 * 1000;
+    await store.saveAuth0Tokens({
+      accessToken: 'at-ok',
+      expiresAt,
+    });
+
+    const expired = Date.now() >= expiresAt - EXPIRY_BUFFER_MS;
+    expect(expired).toBe(false);
   });
 
   it('never exposes raw token values in status output data', async () => {

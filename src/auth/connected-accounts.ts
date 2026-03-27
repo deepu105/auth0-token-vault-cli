@@ -4,7 +4,7 @@ import open from 'open';
 import { log } from '../utils/logger.js';
 import type { Auth0Config } from '../utils/config.js';
 import { bindServer, htmlPage } from './browser.js';
-import { getOidcConfig } from './oidc-config.js';
+import { getOidcConfig, HTTP_TIMEOUT_MS } from './oidc-config.js';
 
 const TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 
@@ -77,6 +77,7 @@ async function initiateConnect(
       state,
       scopes,
     }),
+    signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -111,6 +112,7 @@ async function completeConnect(
       connect_code: connectCode,
       redirect_uri: redirectUri,
     }),
+    signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -198,7 +200,8 @@ export async function runConnectedAccountFlow(options: {
       }
 
       // Auth0 returns the single-use code as `connect_code` (or `code` as fallback)
-      const connectCode = callbackUrl.searchParams.get('connect_code') ?? callbackUrl.searchParams.get('code');
+      const connectCode =
+        callbackUrl.searchParams.get('connect_code') ?? callbackUrl.searchParams.get('code');
       if (!connectCode) {
         res.writeHead(400, { 'Content-Type': 'text/html' }).end(ERROR_HTML('Missing connect_code'));
         shutdown();
@@ -293,6 +296,7 @@ export async function listConnectedAccounts(
 
   const res = await fetch(`https://${config.domain}/me/v1/connected-accounts/accounts`, {
     headers: { Authorization: `Bearer ${myAccountToken}` },
+    signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -320,6 +324,7 @@ export async function deleteConnectedAccount(
     {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${myAccountToken}` },
+      signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
     }
   );
 

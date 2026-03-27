@@ -50,7 +50,11 @@ export async function exchangeForConnectionToken(
       const cachedScopes = entry?.scopes ?? [];
       const missing = options.requiredScopes.filter((s) => !cachedScopes.includes(s));
       if (missing.length > 0) {
-        log('cached token for %s missing scopes: %s — re-exchanging', connection, missing.join(', '));
+        log(
+          'cached token for %s missing scopes: %s — re-exchanging',
+          connection,
+          missing.join(', ')
+        );
       } else {
         log('using cached connection token for %s (scopes validated)', connection);
         return cached;

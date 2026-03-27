@@ -3,10 +3,7 @@ import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import { clearOidcConfigCache } from '../../src/auth/oidc-config.js';
 import type { Auth0Config } from '../../src/utils/config.js';
-import {
-  handlers,
-  mockConnectCompleteResponse,
-} from '../mocks/handlers.js';
+import { handlers, mockConnectCompleteResponse } from '../mocks/handlers.js';
 
 /**
  * Shared state between the MSW initiate handler and the `open` mock.
@@ -168,9 +165,9 @@ describe('deleteConnectedAccount', () => {
       )
     );
 
-    await expect(
-      deleteConnectedAccount(config, REFRESH_TOKEN, 'ca_nonexistent')
-    ).rejects.toThrow('Failed to delete connected account: Not found');
+    await expect(deleteConnectedAccount(config, REFRESH_TOKEN, 'ca_nonexistent')).rejects.toThrow(
+      'Failed to delete connected account: Not found'
+    );
   });
 });
 

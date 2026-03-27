@@ -4,12 +4,12 @@ Full command reference for agent invocation. All examples use `--json` mode.
 
 ## Global options
 
-| Flag                  | Description                                                           |
-| --------------------- | --------------------------------------------------------------------- |
-| `--json`              | Output structured JSON (required for agent use)                       |
-| `--confirm` / `--yes` | Skip destructive-action confirmation prompts                          |
-| `--browser <app>`     | Browser for auth flows (e.g. `firefox`, `google-chrome`)              |
-| `--port <number>`     | Port for the local OAuth callback server (default: auto 18484-18489)  |
+| Flag                  | Description                                                          |
+| --------------------- | -------------------------------------------------------------------- |
+| `--json`              | Output structured JSON (required for agent use)                      |
+| `--confirm` / `--yes` | Skip destructive-action confirmation prompts                         |
+| `--browser <app>`     | Browser for auth flows (e.g. `firefox`, `google-chrome`)             |
+| `--port <number>`     | Port for the local OAuth callback server (default: auto 18484-18489) |
 
 Alternatively, set `AUTH0_TV_OUTPUT=json` in the environment instead of passing `--json` on every call.
 
@@ -25,9 +25,9 @@ auth0-tv login --reconfigure   # re-prompt for Auth0 credentials
 auth0-tv --port 18486 login    # bind callback server to a specific port
 ```
 
-| Flag              | Description                                                                    |
-| ----------------- | ------------------------------------------------------------------------------ |
-| `--reconfigure`   | Re-prompt for Auth0 domain, client ID, and secret                             |
+| Flag            | Description                                       |
+| --------------- | ------------------------------------------------- |
+| `--reconfigure` | Re-prompt for Auth0 domain, client ID, and secret |
 
 ### logout
 
@@ -39,9 +39,9 @@ auth0-tv --json logout --local   # clear local credentials only
 auth0-tv --json --port 18486 logout
 ```
 
-| Flag              | Description                                                                    |
-| ----------------- | ------------------------------------------------------------------------------ |
-| `--local`         | Only clear local credentials without ending the browser session                |
+| Flag      | Description                                                     |
+| --------- | --------------------------------------------------------------- |
+| `--local` | Only clear local credentials without ending the browser session |
 
 ### status
 
@@ -81,9 +81,9 @@ auth0-tv --json disconnect gmail
 auth0-tv --json disconnect gmail --remote
 ```
 
-| Flag       | Description                                                          |
-| ---------- | -------------------------------------------------------------------- |
-| `--remote` | Also remove the server-side connection (Auth0 Token Vault)           |
+| Flag       | Description                                                |
+| ---------- | ---------------------------------------------------------- |
+| `--remote` | Also remove the server-side connection (Auth0 Token Vault) |
 
 Example JSON output (local only):
 
@@ -131,6 +131,7 @@ Example JSON output (logged in, remote available):
 ```
 
 The `tokenStatus` field indicates local token availability:
+
 - `valid` — local token is cached and not expired
 - `expired` — local token is cached but expired
 - `none` — no local token (remote-only connection)

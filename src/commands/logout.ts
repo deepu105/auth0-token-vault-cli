@@ -1,6 +1,10 @@
 import type { Command } from 'commander';
 import chalk from 'chalk';
-import { mergeConfigFromEnvAndStore, resolveBrowser, resolveCallbackPort } from '../utils/config.js';
+import {
+  mergeConfigFromEnvAndStore,
+  resolveBrowser,
+  resolveCallbackPort,
+} from '../utils/config.js';
 import { output, outputError } from '../utils/output.js';
 import { EXIT_GENERAL } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';

@@ -41,14 +41,17 @@ authenticated users via Auth0 Token Vault.
 If `auth0-tv --json status` returns a `not_configured` error, guide the user through setup:
 
 1. **Install Auth0 CLI** (if not already installed):
+
    ```bash
    brew tap auth0/auth0-cli && brew install auth0
    ```
 
 2. **Run the Token Vault setup wizard** (interactive — requires human):
+
    ```bash
    npx configure-auth0-token-vault
    ```
+
    The wizard handles Auth0 CLI login automatically. When prompted:
    - Select **Create a new application** (or use an existing one)
    - Select **Regular Web Application** for the app type
@@ -57,6 +60,7 @@ If `auth0-tv --json status` returns a `not_configured` error, guide the user thr
    Note the **Client ID** from the output.
 
 3. **Configure callback URLs** using the Auth0 CLI (replace `<APP_ID>` with the Client ID):
+
    ```bash
    auth0 apps update <APP_ID> \
      --callbacks "http://127.0.0.1:18484/callback,http://127.0.0.1:18485/callback,http://127.0.0.1:18486/callback,http://127.0.0.1:18487/callback,http://127.0.0.1:18488/callback,http://127.0.0.1:18489/callback" \
@@ -64,6 +68,7 @@ If `auth0-tv --json status` returns a `not_configured` error, guide the user thr
    ```
 
 4. **Get the client secret** (needed during `auth0-tv login`):
+
    ```bash
    auth0 apps show <APP_ID> --reveal-secrets
    ```

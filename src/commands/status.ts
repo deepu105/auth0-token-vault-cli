@@ -2,7 +2,7 @@ import type { Command } from 'commander';
 import chalk from 'chalk';
 import { jwtDecode } from 'jwt-decode';
 import { output } from '../utils/output.js';
-import { CredentialStore } from '../store/credential-store.js';
+import { CredentialStore, EXPIRY_BUFFER_MS } from '../store/credential-store.js';
 import { mergeConfigFromEnvAndStore, resolveStorageBackend } from '../utils/config.js';
 
 interface IdTokenClaims {
@@ -45,7 +45,7 @@ export function registerStatusCommand(program: Command) {
         }
       }
 
-      const expired = Date.now() >= auth0Tokens.expiresAt;
+      const expired = Date.now() >= auth0Tokens.expiresAt - EXPIRY_BUFFER_MS;
       const connections = await store.listConnections();
       const storage = resolveStorageBackend();
 

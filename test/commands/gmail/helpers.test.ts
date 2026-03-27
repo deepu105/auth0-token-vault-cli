@@ -91,6 +91,14 @@ describe('handleGmailError', () => {
     expect(exitSpy).toHaveBeenCalledWith(3);
   });
 
+  it('maps 403 errors to EXIT_AUTHZ_REQUIRED (4)', async () => {
+    const { handleGmailError } = await import('../../../src/commands/gmail/helpers.js');
+    const err = new Error('Forbidden');
+    (err as any).code = 403;
+    handleGmailError(err, cmd);
+    expect(exitSpy).toHaveBeenCalledWith(4);
+  });
+
   it('maps unknown errors to EXIT_SERVICE_ERROR (5)', async () => {
     const { handleGmailError } = await import('../../../src/commands/gmail/helpers.js');
     handleGmailError(new Error('something unexpected'), cmd);

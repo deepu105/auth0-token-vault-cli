@@ -6,6 +6,7 @@ import { requireConfig } from '../../utils/config.js';
 import { outputError } from '../../utils/output.js';
 import {
   EXIT_AUTH_REQUIRED,
+  EXIT_AUTHZ_REQUIRED,
   EXIT_INVALID_INPUT,
   EXIT_SERVICE_ERROR,
   EXIT_NETWORK_ERROR,
@@ -53,6 +54,18 @@ export function handleGmailError(err: unknown, cmd: Command): never {
       cmd
     );
     process.exit(EXIT_AUTH_REQUIRED);
+  }
+
+  if (statusCode === 403) {
+    outputError(
+      {
+        code: 'authorization_required',
+        message:
+          'Insufficient Gmail scopes. Run `auth0-tv connect gmail` to grant additional permissions.',
+      },
+      cmd
+    );
+    process.exit(EXIT_AUTHZ_REQUIRED);
   }
 
   outputError({ code: 'service_error', message }, cmd);

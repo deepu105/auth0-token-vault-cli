@@ -7,7 +7,10 @@ import { http, HttpResponse } from 'msw';
 import { clearOidcConfigCache } from '../../src/auth/oidc-config.js';
 import { CredentialStore } from '../../src/store/credential-store.js';
 import { handlers, mockTokenResponse, mockListAccountsResponse } from '../mocks/handlers.js';
-import { listConnectedAccounts, deleteConnectedAccount } from '../../src/auth/connected-accounts.js';
+import {
+  listConnectedAccounts,
+  deleteConnectedAccount,
+} from '../../src/auth/connected-accounts.js';
 import type { Auth0Config } from '../../src/utils/config.js';
 
 const config: Auth0Config = {
@@ -139,9 +142,9 @@ describe('disconnect command data', () => {
     const account = accounts.find((a) => a.connection === 'google-oauth2')!;
 
     // Remote delete fails
-    await expect(
-      deleteConnectedAccount(config, REFRESH_TOKEN, account.id)
-    ).rejects.toThrow('Failed to delete connected account: Server error');
+    await expect(deleteConnectedAccount(config, REFRESH_TOKEN, account.id)).rejects.toThrow(
+      'Failed to delete connected account: Server error'
+    );
 
     // But local removal still succeeds
     const removed = await store.removeConnection('google-oauth2');

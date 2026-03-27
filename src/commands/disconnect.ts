@@ -6,10 +6,7 @@ import { CredentialStore } from '../store/credential-store.js';
 import { listConnectedAccounts, deleteConnectedAccount } from '../auth/connected-accounts.js';
 import { requireConfig } from '../utils/config.js';
 import { logError } from '../utils/logger.js';
-
-const SERVICE_TO_CONNECTION: Record<string, string> = {
-  gmail: 'google-oauth2',
-};
+import { getConnectionForService, getAvailableServices } from '../utils/service-registry.js';
 
 export function registerDisconnectCommand(program: Command) {
   program
@@ -18,13 +15,13 @@ export function registerDisconnectCommand(program: Command) {
     .option('--remote', 'Also remove the server-side connection (Auth0 Token Vault)')
     .action(async (service: string, opts, cmd: Command) => {
       const serviceLower = service.toLowerCase();
-      const connection = SERVICE_TO_CONNECTION[serviceLower];
+      const connection = getConnectionForService(serviceLower);
 
       if (!connection) {
         outputError(
           {
             code: 'invalid_service',
-            message: `Unknown service: ${service}. Available: ${Object.keys(SERVICE_TO_CONNECTION).join(', ')}`,
+            message: `Unknown service: ${service}. Available: ${getAvailableServices().join(', ')}`,
           },
           cmd
         );

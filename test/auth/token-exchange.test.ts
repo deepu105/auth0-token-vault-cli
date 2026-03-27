@@ -152,7 +152,8 @@ describe('exchangeForConnectionToken', () => {
         HttpResponse.json({
           ...mockExchangeResponse,
           access_token: 'fresh-gmail-token',
-          scope: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send',
+          scope:
+            'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send',
         })
       )
     );

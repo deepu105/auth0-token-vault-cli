@@ -94,8 +94,7 @@ export class FileBackend implements CredentialBackend {
       if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
         return { connections: {} };
       }
-      log('credential file unreadable, starting fresh');
-      return { connections: {} };
+      throw err;
     }
   }
 

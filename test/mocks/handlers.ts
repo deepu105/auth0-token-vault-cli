@@ -175,11 +175,14 @@ export const handlers = [
   }),
 
   // My Account API: Delete Connected Account
-  http.delete(`https://${AUTH0_DOMAIN}/me/v1/connected-accounts/accounts/:accountId`, ({ request }) => {
-    const auth = request.headers.get('authorization');
-    if (!auth?.startsWith('Bearer ')) {
-      return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  http.delete(
+    `https://${AUTH0_DOMAIN}/me/v1/connected-accounts/accounts/:accountId`,
+    ({ request }) => {
+      const auth = request.headers.get('authorization');
+      if (!auth?.startsWith('Bearer ')) {
+        return HttpResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      }
+      return new HttpResponse(null, { status: 204 });
     }
-    return new HttpResponse(null, { status: 204 });
-  }),
+  ),
 ];

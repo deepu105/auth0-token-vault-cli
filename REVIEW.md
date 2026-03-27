@@ -10,6 +10,7 @@
 ## P0 — Must Fix
 
 ### 1. `authSession` used before assignment in Connected Accounts flow
+
 **File:** `src/auth/connected-accounts.ts:215,245`
 **Found by:** Correctness, Reliability
 
@@ -22,6 +23,7 @@
 ---
 
 ### 2. Cached connection tokens returned without checking `requiredScopes`
+
 **File:** `src/auth/token-exchange.ts:45-49`
 **Found by:** Correctness
 
@@ -36,6 +38,7 @@
 ## P1 — Should Fix
 
 ### 3. FileBackend swallows non-ENOENT read errors → silent credential wipeout
+
 **File:** `src/store/credential-store.ts:93-98`
 **Found by:** Reliability, Maintainability
 
@@ -48,30 +51,33 @@
 ---
 
 ### 4. `console.log` bypasses output system, corrupts `--json` stdout
+
 **Files:** `src/auth/pkce-flow.ts:128`, `src/auth/connected-accounts.ts:252`
 **Found by:** Maintainability, Correctness
 
 Two raw `console.log` calls emit human text to stdout during auth flows. When `--json` is active, this interleaves non-JSON text into the stream, breaking agent consumers.
 
-**Fix:** Remove or route through `log()` (debug channel).
+**Fix:** Show these message only when not in `--json` mode, or route them through the `output()` system with a special type.
 
 **autofix_class:** `safe_auto`
 
 ---
 
 ### 5. Status command expiry check inconsistent with store
+
 **File:** `src/commands/status.ts:48`
 **Found by:** Maintainability, Correctness
 
 `status` compares `expiresAt` against `Date.now()` directly, while `CredentialStore` uses a 5-minute `EXPIRY_BUFFER_MS`. A token can show "valid" in status but be treated as expired by every other command.
 
-**Fix:** Apply the same `EXPIRY_BUFFER_MS` in the status check, or export the helper from the store.
+**Fix:** Apply the same `EXPIRY_BUFFER_MS` in the status check, preferably export the helper from the store to reuse.
 
 **autofix_class:** `safe_auto`
 
 ---
 
 ### 6. No tests for login, logout, connect commands
+
 **Files:** `src/commands/login.ts`, `src/commands/logout.ts`, `src/commands/connect.ts`
 **Found by:** Testing
 
@@ -82,6 +88,7 @@ These three commands have zero test coverage. They contain significant logic (co
 ---
 
 ### 7. `connect` command emits multiple JSON objects to stdout
+
 **File:** `src/commands/connect.ts:61-113`
 **Found by:** Correctness, Maintainability
 
@@ -94,6 +101,7 @@ In `--json` mode, `connect` calls `output()` up to 4 times (connecting → accou
 ---
 
 ### 8. `handleGmailError` missing 403 → EXIT_AUTHORIZATION_REQUIRED mapping
+
 **File:** `src/commands/gmail/helpers.ts`
 **Found by:** Correctness, Reliability
 
@@ -106,6 +114,7 @@ In `--json` mode, `connect` calls `output()` up to 4 times (connecting → accou
 ---
 
 ### 9. No timeout on fetch calls or OIDC discovery
+
 **Files:** `src/auth/connected-accounts.ts` (3 fetch calls), `src/auth/token-exchange.ts`, `src/auth/token-refresh.ts`, `src/auth/oidc-config.ts`
 **Found by:** Reliability
 
@@ -118,6 +127,7 @@ All `fetch()` calls and `client.discovery()` lack `AbortSignal.timeout()`. A hun
 ---
 
 ### 10. Duplicate service ↔ connection mapping tables
+
 **Files:** `src/commands/connect.ts:12`, `src/commands/disconnect.ts`, `src/commands/connections.ts`
 **Found by:** Maintainability
 
@@ -132,16 +142,20 @@ Three separate files maintain their own `SERVICE_MAP` / `SERVICE_TO_CONNECTION` 
 ## P2 — Fix If Straightforward
 
 ### 11. `allowInsecureRequests` scoped too broadly
+
 **File:** `src/auth/oidc-config.ts`
 **Found by:** Security
 
 `allowInsecureRequests` is passed based on `localhost` in the domain, but it's applied to the entire `openid-client` configuration, not just the redirect URI. In dev/testing, this disables TLS verification for the Auth0 tenant too.
+
+**Fix:** Explore options and ask for approval
 
 **autofix_class:** `gated_auto`
 
 ---
 
 ### 12. API error extraction pattern duplicated 4 times
+
 **Files:** `src/auth/connected-accounts.ts` (lines 83-85, 117-119, 294-296, 322-324)
 **Found by:** Maintainability
 
@@ -154,6 +168,7 @@ Identical `res.json().catch(() => ({}))` + `.message ?? HTTP ${res.status}` patt
 ---
 
 ### 13. `ExchangeOptions` type exported but never used
+
 **File:** `src/auth/token-exchange.ts`
 **Found by:** Maintainability
 
@@ -164,26 +179,33 @@ The `ExchangeOptions` interface is exported but not consumed by any caller.
 ---
 
 ### 14. Path traversal check in `resolveBody` bypassable via symlink
+
 **File:** `src/commands/gmail/helpers.ts`
 **Found by:** Security
 
 `resolveBody` uses `path.resolve()` + `startsWith(process.cwd())` to block directory traversal. A symlink inside cwd pointing outside it passes this check. Low risk for a CLI tool, but worth noting.
+
+**Fix:** Document the limitation in a comment.
 
 **autofix_class:** `advisory`
 
 ---
 
 ### 15. Domain input not validated
+
 **File:** `src/utils/prompt.ts` (`cleanDomain`)
 **Found by:** Security
 
 `cleanDomain` strips protocol and trailing slashes but doesn't validate the result is a proper domain. A value like `"; rm -rf /` would be interpolated into URLs. Low risk since it's used in URL constructors that would reject it, but defense-in-depth suggests a regex check.
+
+**Fix:** Document the limitation in a comment.
 
 **autofix_class:** `advisory`
 
 ---
 
 ### 16. `GmailClient` parsing functions use `any` types
+
 **File:** `src/services/gmail/client.ts`
 **Found by:** Maintainability, Testing
 
@@ -194,6 +216,7 @@ Multiple helper functions (`parseMessage`, `parseLabel`, etc.) accept and return
 ---
 
 ### 17. KeyringBackend.clear() swallows all errors
+
 **File:** `src/store/keyring-backend.ts`
 **Found by:** Reliability
 
@@ -204,6 +227,7 @@ Multiple helper functions (`parseMessage`, `parseLabel`, etc.) accept and return
 ---
 
 ### 18. No tests for `src/utils/callback-port.ts`
+
 **File:** `src/utils/callback-port.ts` (new, staged file)
 **Found by:** Testing
 
@@ -213,21 +237,8 @@ New utility with no test coverage.
 
 ---
 
-## P3 — User's Discretion
+### 19. Round-trip verification scaffolding in KeyringBackend
 
-### 19. Network error detection via string matching
-**Files:** `src/commands/login.ts:56`, `src/commands/gmail/helpers.ts`
-**Found by:** Maintainability
-
-`message.includes('ECONNREFUSED')` is fragile. Consider checking `err.cause?.code` or using a typed error check.
-
-### 20. `bindServer` retry logic has no jitter or backoff
-**File:** `src/auth/browser.ts`
-**Found by:** Reliability
-
-Port binding tries ports sequentially with no delay. Fine for 6 ports, but worth noting.
-
-### 21. Round-trip verification scaffolding in KeyringBackend
 **File:** `src/store/keyring-backend.ts`
 **Found by:** Maintainability
 
@@ -235,13 +246,29 @@ Debug-level read-back verification after every write. Consider removing or gatin
 
 ---
 
+## P3 — User's Discretion
+
+### 20. Network error detection via string matching
+
+**Files:** `src/commands/login.ts:56`, `src/commands/gmail/helpers.ts`
+**Found by:** Maintainability
+
+`message.includes('ECONNREFUSED')` is fragile. Consider checking `err.cause?.code` or using a typed error check.
+
+### 21. `bindServer` retry logic has no jitter or backoff
+
+**File:** `src/auth/browser.ts`
+**Found by:** Reliability
+
+Port binding tries ports sequentially with no delay. Fine for 6 ports, but worth noting.
+
 ## Summary
 
-| Severity | Count | Key themes |
-|----------|-------|------------|
-| **P0** | 2 | Race condition in auth flow, scope-blind token cache |
-| **P1** | 8 | Silent data loss, stdout corruption, missing tests, inconsistent behavior |
-| **P2** | 8 | Security hardening, code duplication, type safety |
-| **P3** | 3 | Minor quality improvements |
+| Severity | Count | Key themes                                                                |
+| -------- | ----- | ------------------------------------------------------------------------- |
+| **P0**   | 2     | Race condition in auth flow, scope-blind token cache                      |
+| **P1**   | 8     | Silent data loss, stdout corruption, missing tests, inconsistent behavior |
+| **P2**   | 8     | Security hardening, code duplication, type safety                         |
+| **P3**   | 3     | Minor quality improvements                                                |
 
 **Top priorities:** Fix P0 #1 and #2 first — both are correctness bugs that affect core functionality. Then P1 #3 (silent credential wipeout) and #4 (JSON output corruption) as they directly impact the agent-consumption use case this CLI is designed for.

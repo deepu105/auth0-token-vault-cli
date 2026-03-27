@@ -1,5 +1,5 @@
 ---
-title: "fix: Resolve P0 authSession race condition and scope-blind token cache"
+title: 'fix: Resolve P0 authSession race condition and scope-blind token cache'
 type: fix
 status: completed
 date: 2026-03-27

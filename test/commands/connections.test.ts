@@ -58,7 +58,9 @@ describe('connections command data', () => {
       remoteAccounts.map(async (acct) => {
         const localEntry = await store.getConnectionEntry(acct.connection);
         const tokenStatus = localEntry
-          ? (Date.now() >= localEntry.expiresAt - EXPIRY_BUFFER_MS ? 'expired' : 'valid')
+          ? Date.now() >= localEntry.expiresAt - EXPIRY_BUFFER_MS
+            ? 'expired'
+            : 'valid'
           : 'none';
         return {
           connection: acct.connection,
@@ -178,7 +180,9 @@ describe('connections command data', () => {
     const acct = remoteAccounts.find((a) => a.connection === 'google-oauth2')!;
     const localEntry = await store.getConnectionEntry(acct.connection);
     const tokenStatus = localEntry
-      ? (Date.now() >= localEntry.expiresAt - EXPIRY_BUFFER_MS ? 'expired' : 'valid')
+      ? Date.now() >= localEntry.expiresAt - EXPIRY_BUFFER_MS
+        ? 'expired'
+        : 'valid'
       : 'none';
 
     expect(tokenStatus).toBe('expired');
