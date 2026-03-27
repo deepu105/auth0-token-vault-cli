@@ -12,8 +12,15 @@ Access third-party [services](https://auth0.com/ai/docs/integrations/overview) (
    3. In the pop-up select **Regular Web Applications** and click **Create**.
    4. Once the Application is created, switch to the **Settings** tab.
    5. Scroll down to the **Application URIs** section.
-   6. Set **Allowed Callback URLs** as: `http://127.0.0.1:18484/callback` (you can also add the other callback URLs with different ports: 18485, 18486, 18487, 18488, 18489).
-   7. Set **Allowed Logout URLs** as: http://127.0.0.1:18484
+   6. Set **Allowed Callback URLs** to include the default callback range:
+      `http://127.0.0.1:18484/callback`, `http://127.0.0.1:18485/callback`,
+      `http://127.0.0.1:18486/callback`, `http://127.0.0.1:18487/callback`,
+      `http://127.0.0.1:18488/callback`, `http://127.0.0.1:18489/callback`.
+      If you plan to use `--port`, also add that callback URL.
+   7. Set **Allowed Logout URLs** to include:
+      `http://127.0.0.1:18484`, `http://127.0.0.1:18485`, `http://127.0.0.1:18486`,
+      `http://127.0.0.1:18487`, `http://127.0.0.1:18488`, `http://127.0.0.1:18489`.
+      If you plan to use `--port`, also add that logout URL.
    8. Scroll down to the **Refresh Token Rotation** section and disable the **Allow Refresh Token Rotation** option.
    9. Scroll down and expand the **Advanced** section. Switch to the **Grant Types** tab and enable the **Token Vault** grant type.\
    10. Click **Save** in the bottom right to save your changes.
@@ -111,17 +118,21 @@ Set environment variables **or** run `auth0-tv login`, which prompts for the req
 | `AUTH0_TV_OUTPUT`     | Set to `json` to auto-enable JSON output for agents |
 | `AUTH0_TV_STORAGE`    | Credential backend: `keyring` (default) or `file`   |
 | `AUTH0_TV_BROWSER`    | Browser to open for auth flows (e.g. `firefox`)     |
+| `AUTH0_TV_PORT`       | Port for the local OAuth callback server             |
 
 ## Commands
 
 ### Authentication
 
 ```bash
-auth0-tv login              # Authenticate via browser-based PKCE flow
-auth0-tv status             # Show current user and connected services
-auth0-tv connect gmail      # Connect Gmail (opens browser)
-auth0-tv connections        # List connected services
-auth0-tv disconnect gmail   # Disconnect Gmail
+auth0-tv login                    # Authenticate via browser-based PKCE flow
+auth0-tv --port 18486 login       # Force callback server to a specific port
+auth0-tv status                   # Show current user and connected services
+auth0-tv connect gmail            # Connect Gmail (opens browser)
+auth0-tv --port 18486 connect gmail
+auth0-tv --port 18486 logout
+auth0-tv connections              # List connected services
+auth0-tv disconnect gmail         # Disconnect Gmail
 ```
 
 ### Gmail
@@ -142,7 +153,14 @@ auth0-tv gmail draft send <draftId>
 auth0-tv gmail draft delete <draftId>
 ```
 
-### JSON Mode
+### Global Flags
+
+| Flag                  | Description                                                           |
+| --------------------- | --------------------------------------------------------------------- |
+| `--json`              | Output structured JSON (recommended for agents/scripts)               |
+| `--confirm` / `--yes` | Skip destructive-action confirmation prompts                          |
+| `--browser <app>`     | Browser for auth flows (e.g. `firefox`, `google-chrome`)              |
+| `--port <number>`     | Port for the local OAuth callback server (default: auto 18484-18489)  |
 
 Add `--json` for structured output:
 
@@ -211,3 +229,5 @@ MIT
 - [ ] MCP wrapper?
 - [ ] keytar replacement? Maybe with @napi-rs/keyring
 - [ ] lockfile for filestore?
+- [ ] Use teh lib from sam for setup
+- [ ] use api to list and delete connecetd accounts

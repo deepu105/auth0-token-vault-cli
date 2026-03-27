@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import chalk from 'chalk';
-import { mergeConfigFromEnvAndStore, resolveBrowser } from '../utils/config.js';
+import { mergeConfigFromEnvAndStore, resolveBrowser, resolveCallbackPort } from '../utils/config.js';
 import { output, outputError } from '../utils/output.js';
 import { EXIT_GENERAL } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
@@ -30,8 +30,9 @@ export function registerLogoutCommand(program: Command) {
           if (domain && clientId) {
             const globals = cmd.optsWithGlobals();
             const browser = resolveBrowser(globals.browser);
+            const port = resolveCallbackPort(globals.port);
             try {
-              await openBrowserLogout(domain, clientId, browser);
+              await openBrowserLogout(domain, clientId, browser, port);
             } catch {
               log('failed to open browser for logout, continuing with local cleanup');
             }

@@ -1,4 +1,5 @@
 import { log } from './logger.js';
+import { parseCallbackPort } from './callback-port.js';
 import type { CredentialStore } from '../store/credential-store.js';
 import type { StoredConfig } from '../store/types.js';
 
@@ -68,6 +69,18 @@ export async function requireConfig(store: CredentialStore): Promise<Auth0Config
  */
 export function resolveBrowser(flagValue?: string): string | undefined {
   return flagValue || process.env.AUTH0_TV_BROWSER || undefined;
+}
+
+/**
+ * Resolve the callback port for auth flows. Precedence:
+ *  1. --port CLI flag (passed via Commander)
+ *  2. AUTH0_TV_PORT env var
+ *  3. undefined (use default port range)
+ */
+export function resolveCallbackPort(flagValue?: string): number | undefined {
+  const raw = flagValue || process.env.AUTH0_TV_PORT || undefined;
+  if (raw === undefined) return undefined;
+  return parseCallbackPort(raw);
 }
 
 /**

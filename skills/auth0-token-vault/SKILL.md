@@ -77,6 +77,8 @@ auth0-tv --json --confirm gmail send --to user@example.com --subject "Subject" -
 
 **Important:** Exit codes 3 and 4 require human intervention — `login` and `connect` open a browser for OAuth. Do not attempt to run these commands autonomously; instead, tell the user what to run.
 
+Auth and connect/logout callback servers default to trying ports `18484-18489`. If that range is blocked, pass the global `--port <number>` flag or set `AUTH0_TV_PORT` to force a specific port (that port must be allowed in Auth0 app callback settings).
+
 ### Body input for email composition
 
 For `send`, `reply`, and `draft create`, the message body can be provided via:
@@ -91,7 +93,7 @@ Prefer `--body-file` or stdin for messages containing special characters.
 
 ### Authentication & setup
 
-- `auth0-tv login` — authenticate via browser (human-in-the-loop)
+- `auth0-tv login [--reconfigure]` — authenticate via browser (human-in-the-loop)
 - `auth0-tv logout` — clear stored credentials
 - `auth0-tv status` — show current user and connected services
 - `auth0-tv connect <service>` — connect a service via browser (human-in-the-loop)

@@ -6,6 +6,7 @@ import {
   mergeConfigFromEnvAndStore,
   requireConfig,
   resolveBrowser,
+  resolveCallbackPort,
   resolveStorageBackend,
 } from '../../src/utils/config.js';
 import { CredentialStore } from '../../src/store/credential-store.js';
@@ -64,6 +65,45 @@ describe('resolveBrowser', () => {
   it('returns flag value when no env var', () => {
     delete process.env.AUTH0_TV_BROWSER;
     expect(resolveBrowser('firefox')).toBe('firefox');
+  });
+});
+
+describe('resolveCallbackPort', () => {
+  const originalEnv = process.env.AUTH0_TV_PORT;
+
+  afterEach(() => {
+    if (originalEnv === undefined) delete process.env.AUTH0_TV_PORT;
+    else process.env.AUTH0_TV_PORT = originalEnv;
+  });
+
+  it('returns undefined when no flag or env var', () => {
+    delete process.env.AUTH0_TV_PORT;
+    expect(resolveCallbackPort()).toBeUndefined();
+  });
+
+  it('returns env var value when set', () => {
+    process.env.AUTH0_TV_PORT = '18486';
+    expect(resolveCallbackPort()).toBe(18486);
+  });
+
+  it('flag takes precedence over env var', () => {
+    process.env.AUTH0_TV_PORT = '18486';
+    expect(resolveCallbackPort('18487')).toBe(18487);
+  });
+
+  it('returns flag value when no env var', () => {
+    delete process.env.AUTH0_TV_PORT;
+    expect(resolveCallbackPort('18485')).toBe(18485);
+  });
+
+  it('throws on invalid env var', () => {
+    process.env.AUTH0_TV_PORT = 'abc';
+    expect(() => resolveCallbackPort()).toThrow('Invalid --port value');
+  });
+
+  it('throws on invalid flag value', () => {
+    delete process.env.AUTH0_TV_PORT;
+    expect(() => resolveCallbackPort('notanumber')).toThrow('Invalid --port value');
   });
 });
 

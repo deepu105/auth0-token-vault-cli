@@ -20,6 +20,8 @@ export interface PkceFlowOptions {
   scope?: string;
   /** Browser app name to use (e.g. 'firefox'). Undefined = system default. */
   browser?: string;
+  /** Specific port for the local callback server. If omitted, auto-selects from 18484-18489. */
+  port?: number;
 }
 
 export interface TokenResponse {
@@ -45,7 +47,7 @@ const ERROR_HTML = (msg: string) => htmlPage('Authentication failed', msg);
  * 4. Exchange code for tokens via openid-client
  */
 export async function runPkceFlow(options: PkceFlowOptions): Promise<TokenResponse> {
-  const { config, connection, connectionScope, extraParams, scope, browser } = options;
+  const { config, connection, connectionScope, extraParams, scope, browser, port } = options;
 
   const oidcConfig = await getOidcConfig(config);
   const codeVerifier = client.randomPKCECodeVerifier();
@@ -60,9 +62,18 @@ export async function runPkceFlow(options: PkceFlowOptions): Promise<TokenRespon
         fn();
       }
     };
+    const shutdown = () => {
+      server.close();
+      server.closeAllConnections();
+    };
 
     const server = createServer(async (req, res) => {
-      const port = (server.address() as { port: number }).port;
+      const addr = server.address();
+      if (!addr) {
+        res.writeHead(503).end();
+        return;
+      }
+      const port = (addr as { port: number }).port;
       const callbackUrl = new URL(req.url ?? '/', `http://127.0.0.1:${port}`);
 
       if (callbackUrl.pathname !== '/callback') {
@@ -77,7 +88,7 @@ export async function runPkceFlow(options: PkceFlowOptions): Promise<TokenRespon
         });
 
         res.writeHead(200, { 'Content-Type': 'text/html' }).end(SUCCESS_HTML);
-        server.close();
+        shutdown();
         settle(() =>
           resolve({
             access_token: tokens.access_token,
@@ -96,20 +107,20 @@ export async function runPkceFlow(options: PkceFlowOptions): Promise<TokenRespon
               ? err.message
               : 'Token exchange failed';
         res.writeHead(400, { 'Content-Type': 'text/html' }).end(ERROR_HTML(message));
-        server.close();
+        shutdown();
         settle(() => reject(err instanceof Error ? err : new Error(String(message))));
       }
     });
 
     const timeout = setTimeout(() => {
-      server.close();
+      shutdown();
       settle(() => reject(new Error('Authentication timed out (2 minutes)')));
     }, TIMEOUT_MS);
 
     server.on('close', () => clearTimeout(timeout));
 
     // Start server and open browser
-    bindServer(server)
+    bindServer(server, port !== undefined ? [port] : undefined)
       .then((port) => {
         const redirectUri = `http://127.0.0.1:${port}/callback`;
         log('redirect server listening on http://127.0.0.1:%d', port);
@@ -135,7 +146,7 @@ export async function runPkceFlow(options: PkceFlowOptions): Promise<TokenRespon
         return open(authorizeUrl.href, browser ? { app: { name: browser } } : undefined);
       })
       .catch((err) => {
-        server.close();
+        shutdown();
         settle(() => reject(err));
       });
   });

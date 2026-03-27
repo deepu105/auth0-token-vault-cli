@@ -142,8 +142,10 @@ export async function runConnectedAccountFlow(options: {
   connection: string;
   scopes: string[];
   browser?: string;
+  /** Specific port for the local callback server. If omitted, auto-selects from 18484-18489. */
+  port?: number;
 }): Promise<ConnectedAccountResult> {
-  const { config, refreshToken, connection, scopes, browser } = options;
+  const { config, refreshToken, connection, scopes, browser, port } = options;
 
   // Step 1: Get My Account API token
   const myAccountToken = await getMyAccountToken(config, refreshToken);
@@ -242,7 +244,7 @@ export async function runConnectedAccountFlow(options: {
     // auth_session captured here, used in the callback handler above
     let authSession: string;
 
-    bindServer(server)
+    bindServer(server, port !== undefined ? [port] : undefined)
       .then(async (port) => {
         const redirectUri = `http://127.0.0.1:${port}/callback`;
         log('redirect server listening on http://127.0.0.1:%d', port);

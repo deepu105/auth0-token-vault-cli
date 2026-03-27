@@ -4,9 +4,9 @@ import { log } from '../utils/logger.js';
 
 export const CALLBACK_PORTS = [18484, 18485, 18486, 18487, 18488, 18489];
 
-/** Try to bind a server to the first available port in the range */
-export async function bindServer(server: Server): Promise<number> {
-  for (const port of CALLBACK_PORTS) {
+/** Try to bind a server to the first available port in the given list (defaults to CALLBACK_PORTS) */
+export async function bindServer(server: Server, ports: number[] = CALLBACK_PORTS): Promise<number> {
+  for (const port of ports) {
     try {
       await new Promise<void>((resolve, reject) => {
         server.once('error', reject);
@@ -20,9 +20,11 @@ export async function bindServer(server: Server): Promise<number> {
       log('port %d unavailable, trying next', port);
     }
   }
-  throw new Error(
-    `Could not bind callback server to any port in range ${CALLBACK_PORTS[0]}-${CALLBACK_PORTS[CALLBACK_PORTS.length - 1]}`
-  );
+  const rangeDesc =
+    ports.length === 1
+      ? `port ${ports[0]}`
+      : `port range ${ports[0]}-${ports[ports.length - 1]}`;
+  throw new Error(`Could not bind callback server to any ${rangeDesc}`);
 }
 
 /** Escape HTML special characters to prevent XSS */
@@ -54,21 +56,26 @@ export function htmlPage(title: string, message: string): string {
 export async function openBrowserLogout(
   domain: string,
   clientId: string,
-  browser?: string
+  browser?: string,
+  port?: number
 ): Promise<void> {
   const server = createServer((_req, res) => {
     res
       .writeHead(200, { 'Content-Type': 'text/html' })
       .end(htmlPage('Logged out', 'You can close this tab and return to the terminal.'));
     server.close();
+    server.closeAllConnections();
   });
 
-  const port = await bindServer(server);
-  const returnTo = encodeURIComponent(`http://127.0.0.1:${port}`);
+  const boundPort = await bindServer(server, port !== undefined ? [port] : undefined);
+  const returnTo = encodeURIComponent(`http://127.0.0.1:${boundPort}`);
   const logoutUrl = `https://${domain}/v2/logout?client_id=${clientId}&returnTo=${returnTo}`;
   log('opening browser to %s', logoutUrl);
   await open(logoutUrl, browser ? { app: { name: browser } } : undefined);
 
   // Auto-close if browser never hits the callback
-  setTimeout(() => server.close(), 10_000).unref();
+  setTimeout(() => {
+    server.close();
+    server.closeAllConnections();
+  }, 10_000).unref();
 }

@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import chalk from 'chalk';
-import { requireConfig, resolveBrowser } from '../utils/config.js';
+import { requireConfig, resolveBrowser, resolveCallbackPort } from '../utils/config.js';
 import { output, outputError } from '../utils/output.js';
 import { EXIT_AUTH_REQUIRED, EXIT_GENERAL, EXIT_INVALID_INPUT } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
@@ -26,7 +26,7 @@ export function registerConnectCommand(program: Command) {
   program
     .command('connect <service>')
     .description('Connect a third-party service (e.g. gmail)')
-    .action(async (service: string, _opts, cmd: Command) => {
+    .action(async (service: string, opts, cmd: Command) => {
       const serviceLower = service.toLowerCase();
       const mapping = SERVICE_MAP[serviceLower];
 
@@ -66,6 +66,7 @@ export function registerConnectCommand(program: Command) {
 
         const globals = cmd.optsWithGlobals();
         const browser = resolveBrowser(globals.browser);
+        const port = resolveCallbackPort(globals.port);
 
         // Use Connected Accounts API (My Account API) to properly link the
         // external account and store its tokens in Auth0 Token Vault.
@@ -75,6 +76,7 @@ export function registerConnectCommand(program: Command) {
           connection: mapping.connection,
           scopes: mapping.scopes,
           browser,
+          port,
         });
 
         output(
