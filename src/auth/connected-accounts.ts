@@ -256,8 +256,7 @@ export async function runConnectedAccountFlow(options: {
       .then(async (port) => {
         const redirectUri = `http://127.0.0.1:${port}/callback`;
         log('redirect server listening on http://127.0.0.1:%d', port);
-        // eslint-disable-next-line
-        console.log(`Redirect server listening on http://127.0.0.1:${port}`);
+        process.stderr.write(`Redirect server listening on http://127.0.0.1:${port}\n`);
 
         // Step 2: Initiate the connected account link
         const initResult = await initiateConnect(

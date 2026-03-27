@@ -124,8 +124,9 @@ export async function runPkceFlow(options: PkceFlowOptions): Promise<TokenRespon
       .then((port) => {
         const redirectUri = `http://127.0.0.1:${port}/callback`;
         log('redirect server listening on http://127.0.0.1:%d', port);
-        // eslint-disable-next-line
-        console.log(`Redirect server listening on http://127.0.0.1:${port}`);
+        process.stderr.write(
+          `Redirect server listening on http://127.0.0.1:${port}\nOpening browser for authorization...\n`
+        );
 
         const params: Record<string, string> = {
           redirect_uri: redirectUri,
