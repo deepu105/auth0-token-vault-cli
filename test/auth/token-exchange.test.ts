@@ -96,6 +96,107 @@ describe('exchangeForConnectionToken', () => {
     expect(token).toBe('cached-gmail-token');
   });
 
+  it('returns cached token when no requiredScopes are specified', async () => {
+    await store.saveAuth0Tokens({
+      accessToken: 'valid-auth0-token',
+      refreshToken: 'valid-refresh-token',
+      expiresAt: Date.now() + 3600_000,
+    });
+    await store.saveConnectionToken('google-oauth2', {
+      accessToken: 'cached-gmail-token',
+      expiresAt: Date.now() + 3600_000,
+      scopes: ['https://www.googleapis.com/auth/gmail.readonly'],
+    });
+
+    // No requiredScopes — should return cached token regardless of what scopes it has
+    const token = await exchangeForConnectionToken(config, store, 'google-oauth2');
+    expect(token).toBe('cached-gmail-token');
+  });
+
+  it('returns cached token when requiredScopes are all present', async () => {
+    await store.saveAuth0Tokens({
+      accessToken: 'valid-auth0-token',
+      refreshToken: 'valid-refresh-token',
+      expiresAt: Date.now() + 3600_000,
+    });
+    await store.saveConnectionToken('google-oauth2', {
+      accessToken: 'cached-gmail-token',
+      expiresAt: Date.now() + 3600_000,
+      scopes: [
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/gmail.send',
+      ],
+    });
+
+    const token = await exchangeForConnectionToken(config, store, 'google-oauth2', {
+      requiredScopes: ['https://www.googleapis.com/auth/gmail.readonly'],
+    });
+    expect(token).toBe('cached-gmail-token');
+  });
+
+  it('skips cache and re-exchanges when cached token is missing requiredScopes', async () => {
+    await store.saveAuth0Tokens({
+      accessToken: 'valid-auth0-token',
+      refreshToken: 'valid-refresh-token',
+      expiresAt: Date.now() + 3600_000,
+    });
+    await store.saveConnectionToken('google-oauth2', {
+      accessToken: 'cached-gmail-token',
+      expiresAt: Date.now() + 3600_000,
+      scopes: ['https://www.googleapis.com/auth/gmail.readonly'],
+    });
+
+    // Mock returns a token with the broader scopes after re-exchange
+    msw.use(
+      http.post('https://test.auth0.com/oauth/token', () =>
+        HttpResponse.json({
+          ...mockExchangeResponse,
+          access_token: 'fresh-gmail-token',
+          scope: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send',
+        })
+      )
+    );
+
+    const token = await exchangeForConnectionToken(config, store, 'google-oauth2', {
+      requiredScopes: [
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/gmail.send',
+      ],
+    });
+    // Should get the freshly exchanged token, not the cached one
+    expect(token).toBe('fresh-gmail-token');
+    expect(token).not.toBe('cached-gmail-token');
+  });
+
+  it('skips cache when cached token has empty scopes and requiredScopes are set', async () => {
+    await store.saveAuth0Tokens({
+      accessToken: 'valid-auth0-token',
+      refreshToken: 'valid-refresh-token',
+      expiresAt: Date.now() + 3600_000,
+    });
+    await store.saveConnectionToken('google-oauth2', {
+      accessToken: 'cached-gmail-token',
+      expiresAt: Date.now() + 3600_000,
+      scopes: [],
+    });
+
+    // Mock returns a token with the required scope after re-exchange
+    msw.use(
+      http.post('https://test.auth0.com/oauth/token', () =>
+        HttpResponse.json({
+          ...mockExchangeResponse,
+          access_token: 'fresh-gmail-token',
+          scope: 'https://www.googleapis.com/auth/gmail.readonly',
+        })
+      )
+    );
+
+    const token = await exchangeForConnectionToken(config, store, 'google-oauth2', {
+      requiredScopes: ['https://www.googleapis.com/auth/gmail.readonly'],
+    });
+    expect(token).toBe('fresh-gmail-token');
+  });
+
   it('throws EXIT_AUTHZ_REQUIRED on access_denied', async () => {
     await store.saveAuth0Tokens({
       accessToken: 'valid-auth0-token',

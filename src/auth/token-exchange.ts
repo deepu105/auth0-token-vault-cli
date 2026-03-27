@@ -44,8 +44,21 @@ export async function exchangeForConnectionToken(
   // Check cache first
   const cached = await store.getConnectionToken(connection);
   if (cached) {
-    log('using cached connection token for %s', connection);
-    return cached;
+    // If requiredScopes were specified, verify the cached token covers them
+    if (options?.requiredScopes?.length) {
+      const entry = await store.getConnectionEntry(connection);
+      const cachedScopes = entry?.scopes ?? [];
+      const missing = options.requiredScopes.filter((s) => !cachedScopes.includes(s));
+      if (missing.length > 0) {
+        log('cached token for %s missing scopes: %s — re-exchanging', connection, missing.join(', '));
+      } else {
+        log('using cached connection token for %s (scopes validated)', connection);
+        return cached;
+      }
+    } else {
+      log('using cached connection token for %s', connection);
+      return cached;
+    }
   }
 
   // Need Auth0 refresh token for token exchange

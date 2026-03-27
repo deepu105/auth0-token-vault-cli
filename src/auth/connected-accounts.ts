@@ -208,6 +208,7 @@ export async function runConnectedAccountFlow(options: {
 
       // Step 5: Complete the connected account link
       try {
+        const authSession = await authSessionPromise;
         const redirectUri = `http://127.0.0.1:${port}/callback`;
         const result = await completeConnect(
           config,
@@ -241,8 +242,12 @@ export async function runConnectedAccountFlow(options: {
 
     server.on('close', () => clearTimeout(timeout));
 
-    // auth_session captured here, used in the callback handler above
-    let authSession: string;
+    // Deferred promise so the callback handler can safely await authSession
+    // even if the callback fires before initiateConnect resolves.
+    let resolveAuthSession!: (value: string) => void;
+    const authSessionPromise = new Promise<string>((r) => {
+      resolveAuthSession = r;
+    });
 
     bindServer(server, port !== undefined ? [port] : undefined)
       .then(async (port) => {
@@ -261,7 +266,7 @@ export async function runConnectedAccountFlow(options: {
           state
         );
 
-        authSession = initResult.auth_session;
+        resolveAuthSession(initResult.auth_session);
 
         // Build the browser URL: connect_uri + ticket from connect_params
         const connectUrl = new URL(initResult.connect_uri);
