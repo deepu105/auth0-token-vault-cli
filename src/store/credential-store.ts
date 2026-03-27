@@ -6,7 +6,6 @@ import { resolveStorageBackend, type Auth0Config } from '../utils/config.js';
 import type { Auth0Tokens, ConnectionToken, CredentialData, StoredConfig } from './types.js';
 import { refreshAuth0Token } from '../auth/token-refresh.js';
 import type { CredentialBackend } from './backend.js';
-import { KeyringBackend } from './keyring-backend.js';
 
 const DEFAULT_DIR = join(homedir(), '.auth0-tv');
 const CREDENTIALS_FILE = 'credentials.json';
@@ -110,7 +109,9 @@ export class FileBackend implements CredentialBackend {
 // ── CredentialStore (facade) ─────────────────────────────────────
 
 export class CredentialStore {
-  private readonly backend: CredentialBackend;
+  private backend: CredentialBackend | undefined;
+  private readonly backendLoader: (() => Promise<CredentialBackend>) | undefined;
+  private backendPromise: Promise<CredentialBackend> | undefined;
 
   constructor(dir?: string);
   constructor(backend: CredentialBackend);
@@ -124,7 +125,11 @@ export class CredentialStore {
       // No argument — resolve from config/env
       const storage = resolveStorageBackend();
       if (storage === 'keyring') {
-        this.backend = new KeyringBackend();
+        this.backendLoader = async () => {
+          // lazy load to avoid importing keytar in environments where it's not supported
+          const { KeyringBackend } = await import('./keyring-backend.js');
+          return new KeyringBackend();
+        };
       } else {
         this.backend = new FileBackend(DEFAULT_DIR);
       }
@@ -134,18 +139,21 @@ export class CredentialStore {
   // ── Config ─────────────────────────────────────────────────────
 
   async getConfig(): Promise<StoredConfig | null> {
-    return this.backend.getConfig();
+    const backend = await this.getBackend();
+    return backend.getConfig();
   }
 
   async saveConfig(config: StoredConfig): Promise<void> {
-    await this.backend.saveConfig(config);
+    const backend = await this.getBackend();
+    await backend.saveConfig(config);
     log('auth0 config saved');
   }
 
   // ── Read ──────────────────────────────────────────────────────
 
   async getAuth0Token(config?: Auth0Config): Promise<string | null> {
-    const tokens = await this.backend.getAuth0Tokens();
+    const backend = await this.getBackend();
+    const tokens = await backend.getAuth0Tokens();
     if (!tokens) return null;
     if (this.isExpired(tokens.expiresAt)) {
       log('auth0 access token expired');
@@ -174,11 +182,13 @@ export class CredentialStore {
   }
 
   async getAuth0Tokens(): Promise<Auth0Tokens | null> {
-    return this.backend.getAuth0Tokens();
+    const backend = await this.getBackend();
+    return backend.getAuth0Tokens();
   }
 
   async getConnectionToken(connection: string): Promise<string | null> {
-    const entry = await this.backend.getConnectionToken(connection);
+    const backend = await this.getBackend();
+    const entry = await backend.getConnectionToken(connection);
     if (!entry) return null;
     if (this.isExpired(entry.expiresAt)) {
       log('connection token for %s expired', connection);
@@ -188,37 +198,62 @@ export class CredentialStore {
   }
 
   async getConnectionEntry(connection: string): Promise<ConnectionToken | null> {
-    return this.backend.getConnectionToken(connection);
+    const backend = await this.getBackend();
+    return backend.getConnectionToken(connection);
   }
 
   async listConnections(): Promise<string[]> {
-    return this.backend.listConnections();
+    const backend = await this.getBackend();
+    return backend.listConnections();
   }
 
   // ── Write ─────────────────────────────────────────────────────
 
   async saveAuth0Tokens(tokens: Auth0Tokens): Promise<void> {
-    await this.backend.saveAuth0Tokens(tokens);
+    const backend = await this.getBackend();
+    await backend.saveAuth0Tokens(tokens);
     log('auth0 tokens saved');
   }
 
   async saveConnectionToken(connection: string, token: ConnectionToken): Promise<void> {
-    await this.backend.saveConnectionToken(connection, token);
+    const backend = await this.getBackend();
+    await backend.saveConnectionToken(connection, token);
     log('connection token saved for %s', connection);
   }
 
   async removeConnection(connection: string): Promise<boolean> {
-    const removed = await this.backend.removeConnection(connection);
+    const backend = await this.getBackend();
+    const removed = await backend.removeConnection(connection);
     if (removed) log('connection removed: %s', connection);
     return removed;
   }
 
   async clear(): Promise<void> {
-    await this.backend.clear();
+    const backend = await this.getBackend();
+    await backend.clear();
     log('credentials cleared');
   }
 
   // ── Internals ─────────────────────────────────────────────────
+
+  private async getBackend(): Promise<CredentialBackend> {
+    if (this.backend) {
+      return this.backend;
+    }
+
+    if (!this.backendLoader) {
+      throw new Error('Credential backend is not initialized');
+    }
+
+    if (!this.backendPromise) {
+      this.backendPromise = this.backendLoader().then((backend) => {
+        this.backend = backend;
+        return backend;
+      });
+    }
+
+    return this.backendPromise;
+  }
 
   private isExpired(expiresAt: number): boolean {
     return Date.now() >= expiresAt - EXPIRY_BUFFER_MS;
