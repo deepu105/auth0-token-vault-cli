@@ -14,9 +14,13 @@
     "LICENSE"
   ],
   "scripts": {
-    "prebuild": "npm run format && npm run lint",
+    "check": "npm run format:check && npm run lint && npm run typecheck",
+    "verify": "npm run check && npm test",
+    "prebuild": "npm run check",
     "build": "rm -rf dist && tsc",
     "postbuild": "shx chmod +x dist/*.js",
+    "release:check": "npm run verify && npm run build",
+    "release:publish": "npm publish --provenance",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest run",

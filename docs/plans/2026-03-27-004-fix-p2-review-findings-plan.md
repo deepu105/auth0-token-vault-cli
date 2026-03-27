@@ -1,5 +1,5 @@
 ---
-title: "fix: Address P2 review findings — security hardening, code duplication, type safety, and test coverage"
+title: 'fix: Address P2 review findings — security hardening, code duplication, type safety, and test coverage'
 type: fix
 status: completed
 date: 2026-03-27
@@ -161,7 +161,7 @@ P2 items are "fix if straightforward" — each has a small blast radius and can 
   - Modify: `src/utils/prompt.ts`
 
   **Approach:**
-  - In `resolveBody()`, add a comment near the `realpath` + `startsWith` check noting that `realpath()` follows symlinks, so the check is effective against symlink traversal. The original review concern was about symlinks *inside* cwd pointing outside — `realpath()` resolves them, making the check valid. Document this.
+  - In `resolveBody()`, add a comment near the `realpath` + `startsWith` check noting that `realpath()` follows symlinks, so the check is effective against symlink traversal. The original review concern was about symlinks _inside_ cwd pointing outside — `realpath()` resolves them, making the check valid. Document this.
   - In `cleanDomain()`, add a comment noting the value is used in `new URL()` constructors downstream which reject invalid domains, providing defense-in-depth.
 
   **Patterns to follow:**

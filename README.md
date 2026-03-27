@@ -232,10 +232,43 @@ echo "Hello" | auth0-tv gmail send --to a@b.com --subject "Hi" --confirm
 ```bash
 npm install
 npm run dev -- --help       # Run CLI in development mode
+npm run check               # Format, lint, and typecheck without modifying files
+npm run verify              # Full local verification: check + tests
 npm run build               # Compile TypeScript
 npm run test                # Run tests
 npm run lint                # Lint
 ```
+
+## Release
+
+Releases are tag-driven. Publishing to npm is handled by GitHub Actions when you push a version tag that points to a commit on `main`.
+
+Local release verification:
+
+```bash
+npm install
+npm run release:check
+```
+
+This runs the same gates used by the publish workflow:
+
+- `npm run check`
+- `npm test`
+- `npm run build`
+
+To cut a release:
+
+```bash
+npm version patch
+git push origin main --follow-tags
+```
+
+For `minor` or `major` releases, replace `patch` with the appropriate semver bump. The publish workflow will:
+
+- verify the tagged commit is reachable from `main`
+- run `npm run release:check`
+- publish to npm with provenance
+- create the GitHub release notes automatically
 
 ## Credential Storage
 
@@ -247,9 +280,9 @@ MIT
 
 ## Gaps/Todo
 
-- [ ] Refresh token expiry relies on error handling and re-authentication
 - [ ] Add more services (Slack, Google Calendar, etc.)
-- [ ] Use access_token instead of refresh token. Configurable.
+- [ ] Refresh token expiry relies on error handling and re-authentication
+- [ ] Use access_token instead of refresh token. Configurable
 - [ ] MCP wrapper?
 - [ ] keytar replacement? Maybe with @napi-rs/keyring
 - [ ] lockfile for filestore?
