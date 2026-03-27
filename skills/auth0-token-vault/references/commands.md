@@ -74,19 +74,68 @@ Connect a service. No command-specific flags.
 
 ### disconnect
 
-Disconnect a third-party service.
+Disconnect a third-party service. By default, only removes the locally-cached token. Use `--remote` to also remove the server-side connection from Auth0 Token Vault.
 
 ```bash
 auth0-tv --json disconnect gmail
+auth0-tv --json disconnect gmail --remote
+```
+
+| Flag       | Description                                                          |
+| ---------- | -------------------------------------------------------------------- |
+| `--remote` | Also remove the server-side connection (Auth0 Token Vault)           |
+
+Example JSON output (local only):
+
+```json
+{ "status": "disconnected", "service": "gmail", "remote": false }
+```
+
+Example JSON output (with `--remote`):
+
+```json
+{ "status": "disconnected", "service": "gmail", "remote": true }
 ```
 
 ### connections
 
-List connected services.
+List connected services. When logged in, fetches remote connected accounts from Auth0 and shows the local token status for each. Falls back to local-only listing when not logged in or if the remote API is unreachable.
 
 ```bash
 auth0-tv --json connections
 ```
+
+Example JSON output (logged in, remote available):
+
+```json
+{
+  "connections": [
+    {
+      "connection": "google-oauth2",
+      "service": "gmail",
+      "id": "ca_abc123",
+      "scopes": ["https://www.googleapis.com/auth/gmail.modify"],
+      "tokenStatus": "valid",
+      "remote": true
+    },
+    {
+      "connection": "slack",
+      "service": "slack",
+      "id": "ca_def456",
+      "scopes": ["chat:write"],
+      "tokenStatus": "none",
+      "remote": true
+    }
+  ]
+}
+```
+
+The `tokenStatus` field indicates local token availability:
+- `valid` — local token is cached and not expired
+- `expired` — local token is cached but expired
+- `none` — no local token (remote-only connection)
+
+The `remote` field indicates whether the entry came from the Auth0 server (`true`) or from local cache only (`false`, when not logged in).
 
 ## Gmail commands
 

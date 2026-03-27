@@ -97,8 +97,9 @@ Prefer `--body-file` or stdin for messages containing special characters.
 - `auth0-tv logout` — clear stored credentials
 - `auth0-tv status` — show current user and connected services
 - `auth0-tv connect <service>` — connect a service via browser (human-in-the-loop)
-- `auth0-tv disconnect <service>` — disconnect a service
-- `auth0-tv connections` — list connected services
+- `auth0-tv disconnect <service>` — disconnect a service (local token only by default)
+- `auth0-tv disconnect <service> --remote` — disconnect a service and remove the server-side connection
+- `auth0-tv connections` — list connected services (remote accounts with local token status)
 
 ### Gmail
 

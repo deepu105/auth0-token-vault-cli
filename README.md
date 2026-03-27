@@ -131,8 +131,9 @@ auth0-tv status                   # Show current user and connected services
 auth0-tv connect gmail            # Connect Gmail (opens browser)
 auth0-tv --port 18486 connect gmail
 auth0-tv --port 18486 logout
-auth0-tv connections              # List connected services
-auth0-tv disconnect gmail         # Disconnect Gmail
+auth0-tv connections              # List connected services (remote + local status)
+auth0-tv disconnect gmail         # Disconnect Gmail (local only)
+auth0-tv disconnect gmail --remote  # Disconnect Gmail (local + remote)
 ```
 
 ### Gmail
@@ -230,4 +231,3 @@ MIT
 - [ ] keytar replacement? Maybe with @napi-rs/keyring
 - [ ] lockfile for filestore?
 - [ ] Use teh lib from sam for setup
-- [ ] use api to list and delete connecetd accounts
