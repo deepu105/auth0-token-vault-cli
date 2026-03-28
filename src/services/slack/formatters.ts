@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { truncate } from '../../utils/format-helpers.js';
 import type {
   ChannelListResult,
   MessageListResult,
@@ -115,9 +116,6 @@ export function formatUserInfo(user: SlackUser): string {
   return lines.join('\n');
 }
 
-function truncate(str: string, max: number): string {
-  return str.length > max ? `${str.slice(0, max - 1)}…` : str;
-}
 
 function formatTimestamp(ts: string): string {
   const seconds = parseFloat(ts);

@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { truncate } from '../../utils/format-helpers.js';
 import type {
   GitHubRepo,
   GitHubIssue,
@@ -168,6 +169,3 @@ export function formatSearchIssueResults(result: GitHubSearchResult<GitHubIssue>
   return `${header}\n\n${formatIssueList(result.items)}`;
 }
 
-function truncate(str: string, max: number): string {
-  return str.length > max ? `${str.slice(0, max - 1)}…` : str;
-}

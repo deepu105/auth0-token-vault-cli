@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import type { EmailFull, SearchResult, DraftSummary, LabelInfo } from './types.js';
+import { truncate } from '../../utils/format-helpers.js';
 
 export function formatSearchResult(result: SearchResult): string {
   if (result.messages.length === 0) {
@@ -63,9 +64,6 @@ export function formatLabelList(labels: LabelInfo[]): string {
     .join('\n');
 }
 
-function truncate(str: string, max: number): string {
-  return str.length > max ? `${str.slice(0, max - 1)}…` : str;
-}
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

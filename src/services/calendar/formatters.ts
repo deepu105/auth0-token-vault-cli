@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import type { CalendarSummary, EventListResult, EventFull, EventDateTime } from './types.js';
+import { truncate } from '../../utils/format-helpers.js';
 
 export function formatCalendarList(calendars: CalendarSummary[]): string {
   if (calendars.length === 0) {
@@ -86,6 +87,3 @@ function formatDateTimeRange(start: EventDateTime, end: EventDateTime): string {
   return `${startStr} → ${endStr}`;
 }
 
-function truncate(str: string, max: number): string {
-  return str.length > max ? `${str.slice(0, max - 1)}…` : str;
-}
