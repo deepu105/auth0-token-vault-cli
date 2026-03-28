@@ -32,7 +32,8 @@
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write \"**/*.{js,ts,json,md}\"",
     "format:check": "prettier --check \"**/*.{js,ts,json,md}\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky"
   },
   "keywords": [
     "auth0",
@@ -64,6 +65,8 @@
     "eslint": "9.23.0",
     "eslint-config-prettier": "^10.1.1",
     "globals": "^16.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "msw": "^2.7.3",
     "prettier": "^3.5.3",
     "shx": "^0.4.0",
@@ -77,5 +80,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "lint-staged": {
+    "*": "prettier --ignore-unknown --write"
   }
 }
