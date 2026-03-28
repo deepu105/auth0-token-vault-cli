@@ -5,7 +5,7 @@ import { CredentialStore, EXPIRY_BUFFER_MS } from '../store/credential-store.js'
 import { listConnectedAccounts } from '../auth/connected-accounts.js';
 import { requireConfig } from '../utils/config.js';
 import { logError } from '../utils/logger.js';
-import { getServiceForConnection } from '../utils/service-registry.js';
+import { getServicesForConnection } from '../utils/service-registry.js';
 
 function localTokenStatus(entry: { expiresAt: number } | null): 'valid' | 'expired' | 'none' {
   if (!entry) return 'none';
@@ -48,7 +48,8 @@ export function registerConnectionsCommand(program: Command) {
             const status = localTokenStatus(localEntry);
             return {
               connection: acct.connection,
-              service: getServiceForConnection(acct.connection) ?? acct.connection,
+              services: getServicesForConnection(acct.connection),
+              service: getServicesForConnection(acct.connection).join(', ') || acct.connection,
               id: acct.id,
               scopes: acct.scopes,
               tokenStatus: status,
@@ -87,7 +88,8 @@ export function registerConnectionsCommand(program: Command) {
             const status = localTokenStatus(entry);
             return {
               connection: conn,
-              service: getServiceForConnection(conn) ?? conn,
+              services: getServicesForConnection(conn),
+              service: getServicesForConnection(conn).join(', ') || conn,
               scopes: entry?.scopes ?? [],
               tokenStatus: status,
               remote: false,

@@ -84,7 +84,9 @@ All setup steps require human interaction. Do not attempt to run them autonomous
 
 - The user asks to read, search, send, reply, forward, archive, or delete emails
 - The user wants to manage email drafts or labels
-- The user wants to connect or disconnect a third-party service (Gmail, etc.)
+- The user wants to view, create, update, or delete Google calendar events
+- The user wants to search Slack messages, post to channels, or manage their Slack status
+- The user wants to connect or disconnect a third-party service (Gmail, Google Calendar, Slack)
 - The user asks about their authentication or connection status
 
 ## Key patterns
@@ -160,5 +162,27 @@ Prefer `--body-file` or stdin for messages containing special characters.
 - `auth0-tv gmail draft list` — list drafts
 - `auth0-tv gmail draft send <draftId>` — send a draft (destructive)
 - `auth0-tv gmail draft delete <draftId>` — delete a draft (destructive)
+
+### Google Calendar
+
+- `auth0-tv calendar list` — list calendars
+- `auth0-tv calendar events [calendarId]` — list events (default: primary calendar)
+- `auth0-tv calendar get <eventId>` — get event details
+- `auth0-tv calendar create` — create an event (destructive)
+- `auth0-tv calendar update <eventId>` — update an event (destructive)
+- `auth0-tv calendar delete <eventId>` — delete an event (destructive)
+- `auth0-tv calendar quick-add <text>` — create event from natural language (destructive)
+
+### Slack
+
+- `auth0-tv slack channels` — list channels
+- `auth0-tv slack messages <channel>` — list messages in a channel
+- `auth0-tv slack search <query>` — search messages (Slack search syntax)
+- `auth0-tv slack post <channel>` — post a message (destructive)
+- `auth0-tv slack reply <channel> <threadTs>` — reply to a thread (destructive)
+- `auth0-tv slack react <channel> <timestamp>` — add/remove emoji reaction
+- `auth0-tv slack users` — list users
+- `auth0-tv slack user <userId>` — get user info
+- `auth0-tv slack status` — set your status
 
 See [references/commands.md](references/commands.md) for full command reference with flags and JSON output examples.

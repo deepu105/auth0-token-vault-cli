@@ -3,9 +3,11 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { setupServer } from 'msw/node';
+import { http, HttpResponse } from 'msw';
 import { CredentialStore } from '../../src/store/credential-store.js';
 import { clearOidcConfigCache } from '../../src/auth/oidc-config.js';
 import { exchangeForConnectionToken } from '../../src/auth/token-exchange.js';
+import { listConnectedAccounts } from '../../src/auth/connected-accounts.js';
 import { handlers, mockExchangeResponse } from '../mocks/handlers.js';
 import type { Auth0Config } from '../../src/utils/config.js';
 import {
@@ -102,5 +104,155 @@ describe('connect command data', () => {
     expect(getConnectionForService('Gmail')).toBe('google-oauth2');
     expect(getConnectionForService('GMAIL')).toBe('google-oauth2');
     expect(getConnectionForService('unknown')).toBeUndefined();
+  });
+});
+
+describe('connect scope merging', () => {
+  const msw = setupServer(...handlers);
+
+  beforeAll(() => msw.listen({ onUnhandledRequest: 'bypass' }));
+  afterAll(() => msw.close());
+  afterEach(() => {
+    msw.resetHandlers();
+    clearOidcConfigCache();
+  });
+
+  it('merges existing remote scopes with target service scopes', async () => {
+    // Remote has Gmail scopes already approved
+    msw.use(
+      http.get('https://test.auth0.com/me/v1/connected-accounts/accounts', () =>
+        HttpResponse.json({
+          accounts: [
+            {
+              id: 'ca_abc123',
+              connection: 'google-oauth2',
+              scopes: [
+                'https://www.googleapis.com/auth/gmail.readonly',
+                'https://www.googleapis.com/auth/gmail.modify',
+              ],
+            },
+          ],
+        })
+      )
+    );
+
+    const remoteAccounts = await listConnectedAccounts(config, 'valid-refresh-token');
+    const calendarMapping = getServiceEntry('calendar')!;
+    const existing = remoteAccounts.find((a) => a.connection === calendarMapping.connection);
+
+    // Merge: calendar registry scopes + existing remote Gmail scopes
+    const scopes = [...new Set([...calendarMapping.scopes, ...(existing?.scopes ?? [])])];
+
+    expect(scopes).toContain('https://www.googleapis.com/auth/calendar.readonly');
+    expect(scopes).toContain('https://www.googleapis.com/auth/gmail.readonly');
+    expect(scopes).toContain('https://www.googleapis.com/auth/gmail.modify');
+  });
+
+  it('uses only target service scopes when no existing remote connection', async () => {
+    // Remote has no accounts
+    msw.use(
+      http.get('https://test.auth0.com/me/v1/connected-accounts/accounts', () =>
+        HttpResponse.json({ accounts: [] })
+      )
+    );
+
+    const remoteAccounts = await listConnectedAccounts(config, 'valid-refresh-token');
+    const gmailMapping = getServiceEntry('gmail')!;
+    const existing = remoteAccounts.find((a) => a.connection === gmailMapping.connection);
+
+    const scopes = [...new Set([...gmailMapping.scopes, ...(existing?.scopes ?? [])])];
+
+    // Only Gmail's own registry scopes
+    expect(scopes).toEqual(gmailMapping.scopes);
+  });
+
+  it('deduplicates when re-connecting the same service', async () => {
+    // Remote already has Gmail scopes (subset of registry)
+    msw.use(
+      http.get('https://test.auth0.com/me/v1/connected-accounts/accounts', () =>
+        HttpResponse.json({
+          accounts: [
+            {
+              id: 'ca_abc123',
+              connection: 'google-oauth2',
+              scopes: ['https://www.googleapis.com/auth/gmail.modify'],
+            },
+          ],
+        })
+      )
+    );
+
+    const remoteAccounts = await listConnectedAccounts(config, 'valid-refresh-token');
+    const gmailMapping = getServiceEntry('gmail')!;
+    const existing = remoteAccounts.find((a) => a.connection === gmailMapping.connection);
+
+    const scopes = [...new Set([...gmailMapping.scopes, ...(existing?.scopes ?? [])])];
+
+    // gmail.modify appears once (deduplicated), all registry scopes present
+    expect(scopes).toEqual(gmailMapping.scopes);
+    expect(scopes.filter((s) => s === 'https://www.googleapis.com/auth/gmail.modify')).toHaveLength(
+      1
+    );
+  });
+
+  it('falls back to target service scopes when remote API fails', async () => {
+    msw.use(
+      http.get('https://test.auth0.com/me/v1/connected-accounts/accounts', () =>
+        HttpResponse.json({ message: 'Server error' }, { status: 500 })
+      )
+    );
+
+    const calendarMapping = getServiceEntry('calendar')!;
+    let scopes = [...calendarMapping.scopes];
+
+    try {
+      const remoteAccounts = await listConnectedAccounts(config, 'valid-refresh-token');
+      const existing = remoteAccounts.find((a) => a.connection === calendarMapping.connection);
+      if (existing?.scopes.length) {
+        scopes = [...new Set([...scopes, ...existing.scopes])];
+      }
+    } catch {
+      // Non-fatal — proceed with just the target service's scopes
+    }
+
+    // Falls back to just calendar scopes
+    expect(scopes).toEqual([
+      'https://www.googleapis.com/auth/calendar.readonly',
+      'https://www.googleapis.com/auth/calendar.events',
+    ]);
+  });
+
+  it('does not merge scopes from unrelated connections', async () => {
+    // Remote has both google-oauth2 and slack connections
+    msw.use(
+      http.get('https://test.auth0.com/me/v1/connected-accounts/accounts', () =>
+        HttpResponse.json({
+          accounts: [
+            {
+              id: 'ca_abc123',
+              connection: 'google-oauth2',
+              scopes: ['https://www.googleapis.com/auth/gmail.modify'],
+            },
+            {
+              id: 'ca_def456',
+              connection: 'sign-in-with-slack',
+              scopes: ['chat:write', 'search:read'],
+            },
+          ],
+        })
+      )
+    );
+
+    const remoteAccounts = await listConnectedAccounts(config, 'valid-refresh-token');
+    const calendarMapping = getServiceEntry('calendar')!;
+    const existing = remoteAccounts.find((a) => a.connection === calendarMapping.connection);
+
+    const scopes = [...new Set([...calendarMapping.scopes, ...(existing?.scopes ?? [])])];
+
+    // Calendar + Gmail scopes merged, but NO Slack scopes
+    expect(scopes).toContain('https://www.googleapis.com/auth/calendar.readonly');
+    expect(scopes).toContain('https://www.googleapis.com/auth/gmail.modify');
+    expect(scopes).not.toContain('chat:write');
+    expect(scopes).not.toContain('search:read');
   });
 });

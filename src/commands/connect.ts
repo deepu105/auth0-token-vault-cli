@@ -4,9 +4,9 @@ import { requireConfig, resolveBrowser, resolveCallbackPort } from '../utils/con
 import { output, outputError } from '../utils/output.js';
 import { EXIT_AUTH_REQUIRED, EXIT_GENERAL, EXIT_INVALID_INPUT } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
-import { runConnectedAccountFlow } from '../auth/connected-accounts.js';
+import { runConnectedAccountFlow, listConnectedAccounts } from '../auth/connected-accounts.js';
 import { exchangeForConnectionToken } from '../auth/token-exchange.js';
-import { logError } from '../utils/logger.js';
+import { log, logError } from '../utils/logger.js';
 import { getServiceEntry, getAvailableServices } from '../utils/service-registry.js';
 
 export function registerConnectCommand(program: Command) {
@@ -45,6 +45,23 @@ export function registerConnectCommand(program: Command) {
         // Clear any stale cached connection token before re-authorizing
         await store.removeConnection(mapping.connection);
 
+        // Build scopes: always include full registry scopes for the target service,
+        // plus any already-approved remote scopes (from sibling services on the same connection).
+        let scopes = [...mapping.scopes];
+        try {
+          const remoteAccounts = await listConnectedAccounts(config, auth0Tokens.refreshToken);
+          const existing = remoteAccounts.find((a) => a.connection === mapping.connection);
+          if (existing?.scopes.length) {
+            scopes = [...new Set([...scopes, ...existing.scopes])];
+            log('merged existing remote scopes for %s: %o', mapping.connection, scopes);
+          }
+        } catch (err) {
+          log(
+            'failed to fetch existing remote scopes, proceeding with service scopes only: %s',
+            err instanceof Error ? err.message : err
+          );
+        }
+
         // Progress message to stderr (human mode only — never to JSON stdout)
         process.stderr.write(`Connecting ${serviceLower}... Opening browser for authorization.\n`);
 
@@ -58,7 +75,7 @@ export function registerConnectCommand(program: Command) {
           config,
           refreshToken: auth0Tokens.refreshToken,
           connection: mapping.connection,
-          scopes: mapping.scopes,
+          scopes,
           browser,
           port,
         });

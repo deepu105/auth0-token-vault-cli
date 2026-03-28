@@ -22,12 +22,36 @@ const SERVICE_REGISTRY: Record<string, ServiceEntry> = {
       'https://www.googleapis.com/auth/gmail.labels',
     ],
   },
+  calendar: {
+    connection: 'google-oauth2',
+    scopes: [
+      'https://www.googleapis.com/auth/calendar.readonly',
+      'https://www.googleapis.com/auth/calendar.events',
+    ],
+  },
+  slack: {
+    connection: 'sign-in-with-slack',
+    scopes: [
+      'channels:read',
+      'channels:history',
+      'groups:read',
+      'groups:history',
+      'chat:write',
+      'search:read',
+      'reactions:write',
+      'users:read',
+      'users.profile:write',
+    ],
+  },
 };
 
-/** Reverse lookup: connection identifier → service name */
-const CONNECTION_TO_SERVICE = new Map<string, string>(
-  Object.entries(SERVICE_REGISTRY).map(([service, entry]) => [entry.connection, service])
-);
+/** Reverse lookup: connection identifier → service names (1:N) */
+const CONNECTION_TO_SERVICES = new Map<string, string[]>();
+for (const [service, entry] of Object.entries(SERVICE_REGISTRY)) {
+  const existing = CONNECTION_TO_SERVICES.get(entry.connection) ?? [];
+  existing.push(service);
+  CONNECTION_TO_SERVICES.set(entry.connection, existing);
+}
 
 /** Get the connection config for a service name (case-insensitive). */
 export function getServiceEntry(service: string): ServiceEntry | undefined {
@@ -44,9 +68,15 @@ export function getScopesForService(service: string): string[] | undefined {
   return SERVICE_REGISTRY[service.toLowerCase()]?.scopes;
 }
 
-/** Get the user-friendly service name for an Auth0 connection identifier. */
+/** Get the user-friendly service name for an Auth0 connection identifier (first match). */
 export function getServiceForConnection(connection: string): string | undefined {
-  return CONNECTION_TO_SERVICE.get(connection);
+  const services = CONNECTION_TO_SERVICES.get(connection);
+  return services?.[0];
+}
+
+/** Get all user-friendly service names for an Auth0 connection identifier. */
+export function getServicesForConnection(connection: string): string[] {
+  return CONNECTION_TO_SERVICES.get(connection) ?? [];
 }
 
 /** Get all available service names. */

@@ -10,6 +10,8 @@ import { registerDisconnectCommand } from './commands/disconnect.js';
 import { registerConnectionsCommand } from './commands/connections.js';
 import { registerStatusCommand } from './commands/status.js';
 import { createGmailCommand } from './commands/gmail/index.js';
+import { createCalendarCommand } from './commands/calendar/index.js';
+import { createSlackCommand } from './commands/slack/index.js';
 
 // Global error handlers
 ['uncaughtException', 'unhandledRejection'].forEach((event) => {
@@ -51,6 +53,12 @@ registerDisconnectCommand(program);
 
 // ── Gmail subcommand group ─────────────────────────────────────
 program.addCommand(createGmailCommand());
+
+// ── Calendar subcommand group ─────────────────────────────────
+program.addCommand(createCalendarCommand());
+
+// ── Slack subcommand group ────────────────────────────────────
+program.addCommand(createSlackCommand());
 
 // ── Unknown command handling ───────────────────────────────────
 program.on('command:*', () => {

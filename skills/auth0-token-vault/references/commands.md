@@ -294,6 +294,244 @@ Delete a draft. **Destructive — requires `--confirm`.**
 auth0-tv --json --confirm gmail draft delete <draftId>
 ```
 
+## Google Calendar commands
+
+All Calendar commands require a connected Google Calendar account. If not connected, the CLI exits with code 4.
+
+### calendar list
+
+List calendars the user has access to.
+
+```bash
+auth0-tv --json calendar list
+auth0-tv --json calendar list --max-results 5
+```
+
+| Flag                    | Description               | Default |
+| ----------------------- | ------------------------- | ------- |
+| `--max-results <n>`     | Maximum results to return | 100     |
+
+### calendar events
+
+List events from a calendar.
+
+```bash
+auth0-tv --json calendar events
+auth0-tv --json calendar events primary --from 2026-03-28T00:00:00Z --to 2026-04-04T00:00:00Z
+auth0-tv --json calendar events --query "standup" --max-results 5
+```
+
+| Flag                    | Description                         | Default   |
+| ----------------------- | ----------------------------------- | --------- |
+| `[calendarId]`          | Calendar ID                         | `primary` |
+| `--from <date>`         | Start date (ISO 8601)               | —         |
+| `--to <date>`           | End date (ISO 8601)                 | —         |
+| `--query <text>`        | Free-text search                    | —         |
+| `--max-results <n>`     | Maximum results to return           | 25        |
+| `--page-token <token>`  | Page token for pagination           | —         |
+
+### calendar get
+
+Get details for a specific event.
+
+```bash
+auth0-tv --json calendar get <eventId>
+auth0-tv --json calendar get <eventId> --calendar <calendarId>
+```
+
+| Flag                  | Description  | Default   |
+| --------------------- | ------------ | --------- |
+| `--calendar <id>`     | Calendar ID  | `primary` |
+
+### calendar create
+
+Create a new event. **Destructive — requires `--confirm`.**
+
+```bash
+auth0-tv --json --confirm calendar create --summary "Meeting" --start 2026-03-28T10:00:00 --end 2026-03-28T11:00:00
+auth0-tv --json --confirm calendar create --summary "Lunch" --start 2026-03-28T12:00:00 --end 2026-03-28T13:00:00 --location "Cafe" --attendees "a@b.com,c@d.com" --description "Team lunch"
+```
+
+| Flag                      | Description                       |
+| ------------------------- | --------------------------------- |
+| `--summary <text>`        | Event title (required)            |
+| `--start <datetime>`      | Start time, ISO 8601 (required)   |
+| `--end <datetime>`        | End time, ISO 8601 (required)     |
+| `--location <text>`       | Event location                    |
+| `--description <text>`    | Event description                 |
+| `--attendees <emails>`    | Comma-separated attendee emails   |
+| `--calendar <id>`         | Calendar ID (default: `primary`)  |
+
+### calendar update
+
+Update an existing event. **Destructive — requires `--confirm`.**
+
+```bash
+auth0-tv --json --confirm calendar update <eventId> --summary "New Title"
+auth0-tv --json --confirm calendar update <eventId> --start 2026-03-28T14:00:00 --end 2026-03-28T15:00:00
+```
+
+All fields are optional — only provided fields are updated (uses PATCH).
+
+| Flag                      | Description                       |
+| ------------------------- | --------------------------------- |
+| `--summary <text>`        | Event title                       |
+| `--start <datetime>`      | Start time, ISO 8601              |
+| `--end <datetime>`        | End time, ISO 8601                |
+| `--location <text>`       | Event location                    |
+| `--description <text>`    | Event description                 |
+| `--attendees <emails>`    | Comma-separated attendee emails   |
+| `--calendar <id>`         | Calendar ID (default: `primary`)  |
+
+### calendar delete
+
+Delete an event. **Destructive — requires `--confirm`.**
+
+```bash
+auth0-tv --json --confirm calendar delete <eventId>
+auth0-tv --json --confirm calendar delete <eventId> --calendar <calendarId>
+```
+
+| Flag              | Description                       |
+| ----------------- | --------------------------------- |
+| `--calendar <id>` | Calendar ID (default: `primary`)  |
+
+### calendar quick-add
+
+Create an event using natural language. **Destructive — requires `--confirm`.**
+
+```bash
+auth0-tv --json --confirm calendar quick-add "Lunch with Alice tomorrow at noon at Cafe Nero"
+```
+
+| Flag              | Description                       |
+| ----------------- | --------------------------------- |
+| `--calendar <id>` | Calendar ID (default: `primary`)  |
+
+## Slack commands
+
+All Slack commands require a connected Slack account. If not connected, the CLI exits with code 4.
+
+### slack channels
+
+List Slack channels the user is in.
+
+```bash
+auth0-tv --json slack channels
+auth0-tv --json slack channels --limit 50
+```
+
+| Flag              | Description               | Default |
+| ----------------- | ------------------------- | ------- |
+| `--limit <n>`     | Maximum results per page  | 100     |
+| `--cursor <token>`| Pagination cursor         | —       |
+
+### slack messages
+
+List messages in a channel.
+
+```bash
+auth0-tv --json slack messages C1234567890
+auth0-tv --json slack messages C1234567890 --limit 20 --oldest 1609459200
+```
+
+| Flag               | Description                    | Default |
+| ------------------ | ------------------------------ | ------- |
+| `--limit <n>`      | Maximum messages per page      | 50      |
+| `--cursor <token>` | Pagination cursor              | —       |
+| `--oldest <ts>`    | Start of time range (Unix ts)  | —       |
+| `--latest <ts>`    | End of time range (Unix ts)    | —       |
+
+### slack search
+
+Search Slack messages. Supports Slack search syntax (`from:@user`, `in:#channel`, `has:link`, etc.).
+
+```bash
+auth0-tv --json slack search "project update"
+auth0-tv --json slack search "from:@alice in:#general" --count 5
+```
+
+| Flag                | Description                        | Default     |
+| ------------------- | ---------------------------------- | ----------- |
+| `--sort <field>`    | Sort by `timestamp` or `score`     | `timestamp` |
+| `--sort-dir <dir>`  | Sort direction: `asc` or `desc`    | `desc`      |
+| `--count <n>`       | Results per page (max 100)         | 20          |
+| `--page <n>`        | Page number (1-indexed)            | 1           |
+
+### slack post
+
+Post a message to a channel. **Destructive — requires `--confirm`.**
+
+```bash
+auth0-tv --json --confirm slack post C1234567890 --text "Hello team!"
+```
+
+| Flag           | Description              |
+| -------------- | ------------------------ |
+| `--text <msg>` | Message text (required)  |
+
+### slack reply
+
+Reply to a thread. **Destructive — requires `--confirm`.**
+
+```bash
+auth0-tv --json --confirm slack reply C1234567890 1234567890.123456 --text "Got it!"
+```
+
+| Flag           | Description              |
+| -------------- | ------------------------ |
+| `--text <msg>` | Reply text (required)    |
+
+### slack react
+
+Add or remove an emoji reaction on a message.
+
+```bash
+auth0-tv --json slack react C1234567890 1234567890.123456 --add thumbsup
+auth0-tv --json slack react C1234567890 1234567890.123456 --remove thumbsup
+```
+
+| Flag              | Description                      |
+| ----------------- | -------------------------------- |
+| `--add <emoji>`   | Emoji name to add (no colons)    |
+| `--remove <emoji>`| Emoji name to remove (no colons) |
+
+### slack users
+
+List Slack users.
+
+```bash
+auth0-tv --json slack users
+auth0-tv --json slack users --limit 50
+```
+
+| Flag              | Description              | Default |
+| ----------------- | ------------------------ | ------- |
+| `--limit <n>`     | Maximum results per page | 200     |
+| `--cursor <token>`| Pagination cursor        | —       |
+
+### slack user
+
+Get info about a specific Slack user.
+
+```bash
+auth0-tv --json slack user U1234567890
+```
+
+### slack status
+
+Set your Slack status.
+
+```bash
+auth0-tv --json slack status --text "In a meeting" --emoji ":calendar:" --expiration 60
+```
+
+| Flag                  | Description                            |
+| --------------------- | -------------------------------------- |
+| `--text <text>`       | Status text (required)                 |
+| `--emoji <emoji>`     | Status emoji (e.g. `:calendar:`)       |
+| `--expiration <mins>` | Minutes until status expires (0 = never)|
+
 ## Exit codes
 
 | Code | Constant              | Meaning                                                            |

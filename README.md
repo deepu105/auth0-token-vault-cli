@@ -2,6 +2,17 @@
 
 Access third-party [services](https://auth0.com/ai/docs/integrations/overview) (Gmail, Slack, etc.) on behalf of authenticated users via [Auth0 Token Vault](https://auth0.com/ai/docs/intro/token-vault). Designed for both humans and AI agents.
 
+## Available Services
+
+- [Gmail](https://auth0.com/ai/docs/integrations/google)
+- [Google Calendar](https://auth0.com/ai/docs/integrations/google)
+- [Slack](https://auth0.com/ai/docs/integrations/slack)
+- [Github](https://auth0.com/ai/docs/integrations/github) - coming soon!
+- [Google Drive](https://auth0.com/ai/docs/integrations/google) - coming soon!
+- [Google Contacts](https://auth0.com/ai/docs/integrations/google) - coming soon!
+- [Google Tasks](https://auth0.com/ai/docs/integrations/google) - coming soon!
+- More coming soon!
+
 ## Auth0 Tenant Setup
 
 ### Prerequisites
@@ -80,10 +91,12 @@ Requires Node.js 20+.
 auth0-tv login
 ```
 
-### 2. Connect Gmail
+### 2. Connect a service
 
 ```bash
 auth0-tv connect gmail
+auth0-tv connect calendar
+auth0-tv connect slack
 ```
 
 ### 3. Search emails
@@ -92,11 +105,16 @@ auth0-tv connect gmail
 auth0-tv gmail search "from:boss@company.com"
 ```
 
-### 4. Read an email
+### 4. Check upcoming events
 
 ```bash
-auth0-tv gmail read <messageId>
+auth0-tv calendar events --from 2026-03-28T00:00:00Z
+```
 
+### 5. Search Slack
+
+```bash
+auth0-tv slack search "project update"
 ```
 
 ## Agent Integration
@@ -152,6 +170,8 @@ auth0-tv login                    # Authenticate via browser-based PKCE flow
 auth0-tv --port 18486 login       # Force callback server to a specific port
 auth0-tv status                   # Show current user and connected services
 auth0-tv connect gmail            # Connect Gmail (opens browser)
+auth0-tv connect calendar         # Connect Google Calendar
+auth0-tv connect slack            # Connect Slack
 auth0-tv --port 18486 connect gmail
 auth0-tv --port 18486 logout
 auth0-tv connections              # List connected services (remote + local status)
@@ -175,6 +195,37 @@ auth0-tv gmail draft create --to a@b.com --subject "Draft" --body "..."
 auth0-tv gmail draft list
 auth0-tv gmail draft send <draftId>
 auth0-tv gmail draft delete <draftId>
+```
+
+### Google Calendar
+
+```bash
+auth0-tv calendar list                           # List calendars
+auth0-tv calendar events                         # List upcoming events (primary calendar)
+auth0-tv calendar events --from 2026-03-28T00:00:00Z --to 2026-04-04T00:00:00Z
+auth0-tv calendar events --query "standup"       # Search events
+auth0-tv calendar get <eventId>                  # Get event details
+auth0-tv calendar create --summary "Meeting" --start 2026-03-28T10:00:00 --end 2026-03-28T11:00:00
+auth0-tv calendar create --summary "Lunch" --start 2026-03-28T12:00:00 --end 2026-03-28T13:00:00 --location "Cafe" --attendees "a@b.com,c@d.com"
+auth0-tv calendar update <eventId> --summary "Updated title"
+auth0-tv calendar delete <eventId>               # Delete an event
+auth0-tv calendar quick-add "Lunch tomorrow at noon"
+```
+
+### Slack
+
+```bash
+auth0-tv slack channels                          # List channels
+auth0-tv slack messages <channel>                # List messages in a channel
+auth0-tv slack messages <channel> --oldest 1609459200 --latest 1609545600
+auth0-tv slack search "project update"           # Search messages
+auth0-tv slack post <channel> --text "Hello!"    # Post a message
+auth0-tv slack reply <channel> <threadTs> --text "Got it"
+auth0-tv slack react <channel> <timestamp> --add thumbsup
+auth0-tv slack react <channel> <timestamp> --remove thumbsup
+auth0-tv slack users                             # List users
+auth0-tv slack user <userId>                     # Get user info
+auth0-tv slack status --text "In a meeting" --emoji ":calendar:" --expiration 60
 ```
 
 ### Global Flags
@@ -281,8 +332,9 @@ MIT
 ## Gaps/Todo
 
 - [ ] Add more services (Slack, Google Calendar, etc.)
-- [ ] Refresh token expiry relies on error handling and re-authentication
 - [ ] Use access_token instead of refresh token. Configurable
+- [ ] API pass-through for non-supported services (e.g. `auth0-tv gmail api <endpoint> [options]`)
+- [ ] Refresh token expiry relies on error handling and re-authentication
 - [ ] MCP wrapper?
 - [ ] keytar replacement? Maybe with @napi-rs/keyring
 - [ ] lockfile for filestore?

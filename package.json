@@ -43,6 +43,7 @@
   "author": "auth0",
   "license": "MIT",
   "dependencies": {
+    "@slack/web-api": "^7.15.0",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
     "debug": "^4.4.0",
