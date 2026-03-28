@@ -9,6 +9,8 @@
 interface ServiceEntry {
   connection: string;
   scopes: string[];
+  /** Default allowed domains for the `fetch` command. */
+  allowedDomains: string[];
 }
 
 const SERVICE_REGISTRY: Record<string, ServiceEntry> = {
@@ -21,6 +23,7 @@ const SERVICE_REGISTRY: Record<string, ServiceEntry> = {
       'https://www.googleapis.com/auth/gmail.modify',
       'https://www.googleapis.com/auth/gmail.labels',
     ],
+    allowedDomains: ['*.googleapis.com'],
   },
   calendar: {
     connection: 'google-oauth2',
@@ -28,12 +31,14 @@ const SERVICE_REGISTRY: Record<string, ServiceEntry> = {
       'https://www.googleapis.com/auth/calendar.readonly',
       'https://www.googleapis.com/auth/calendar.events',
     ],
+    allowedDomains: ['*.googleapis.com'],
   },
   github: {
     connection: 'github',
     scopes: [
       /* GitHub apps use fine grained auth */
     ],
+    allowedDomains: ['api.github.com'],
   },
   slack: {
     connection: 'sign-in-with-slack',
@@ -48,6 +53,7 @@ const SERVICE_REGISTRY: Record<string, ServiceEntry> = {
       'users:read',
       'users.profile:write',
     ],
+    allowedDomains: ['slack.com', '*.slack.com'],
   },
 };
 
@@ -72,6 +78,11 @@ export function getConnectionForService(service: string): string | undefined {
 /** Get the required scopes for a service name. */
 export function getScopesForService(service: string): string[] | undefined {
   return SERVICE_REGISTRY[service.toLowerCase()]?.scopes;
+}
+
+/** Get the default allowed domains for a service name. */
+export function getAllowedDomainsForService(service: string): string[] | undefined {
+  return SERVICE_REGISTRY[service.toLowerCase()]?.allowedDomains;
 }
 
 /** Get the user-friendly service name for an Auth0 connection identifier (first match). */

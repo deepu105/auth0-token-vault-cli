@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { log } from '../utils/logger.js';
 import { resolveStorageBackend, type Auth0Config } from '../utils/config.js';
-import type { Auth0Tokens, ConnectionToken, CredentialData, StoredConfig } from './types.js';
+import type { Auth0Tokens, ConnectionToken, CredentialData, ServiceSettings, StoredConfig } from './types.js';
 import { refreshAuth0Token } from '../auth/token-refresh.js';
 import type { CredentialBackend } from './backend.js';
 
@@ -70,11 +70,27 @@ export class FileBackend implements CredentialBackend {
     return true;
   }
 
+  async getServiceSettings(service: string): Promise<ServiceSettings | null> {
+    const data = await this.load();
+    return data.serviceSettings?.[service] ?? null;
+  }
+
+  async saveServiceSettings(service: string, settings: ServiceSettings): Promise<void> {
+    const data = await this.load();
+    if (!data.serviceSettings) data.serviceSettings = {};
+    data.serviceSettings[service] = settings;
+    await this.persist(data);
+  }
+
   async clear(): Promise<void> {
     const data = await this.load();
-    if (data.config) {
-      // Preserve config, wipe tokens and connections
-      await this.persist({ config: data.config, connections: {} });
+    if (data.config || data.serviceSettings) {
+      // Preserve config and service settings, wipe tokens and connections
+      await this.persist({
+        ...(data.config ? { config: data.config } : {}),
+        connections: {},
+        ...(data.serviceSettings ? { serviceSettings: data.serviceSettings } : {}),
+      });
     } else {
       try {
         await unlink(this.filePath);
@@ -226,6 +242,17 @@ export class CredentialStore {
     const removed = await backend.removeConnection(connection);
     if (removed) log('connection removed: %s', connection);
     return removed;
+  }
+
+  async getServiceSettings(service: string): Promise<ServiceSettings | null> {
+    const backend = await this.getBackend();
+    return backend.getServiceSettings(service);
+  }
+
+  async saveServiceSettings(service: string, settings: ServiceSettings): Promise<void> {
+    const backend = await this.getBackend();
+    await backend.saveServiceSettings(service, settings);
+    log('service settings saved for %s', service);
   }
 
   async clear(): Promise<void> {

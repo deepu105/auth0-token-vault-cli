@@ -174,6 +174,7 @@ auth0-tv connect gmail            # Connect Gmail (opens browser)
 auth0-tv connect calendar         # Connect Google Calendar
 auth0-tv connect slack            # Connect Slack
 auth0-tv connect github           # Connect GitHub
+auth0-tv connect github --allowed-domains "ghcr.io"  # Add extra allowed domains for fetch
 auth0-tv --port 18486 connect gmail
 auth0-tv --port 18486 logout
 auth0-tv connections              # List connected services (remote + local status)
@@ -251,6 +252,32 @@ auth0-tv github notification read <id>             # Mark notification as read
 auth0-tv github search repos "auth0 language:typescript"
 auth0-tv github search code "handleError repo:octocat/Hello-World"
 auth0-tv github search issues "bug label:critical"
+```
+
+### API Passthrough (fetch)
+
+Make authenticated HTTP requests to allowed domains using a service's token. Only HTTPS URLs are permitted. Each service has default allowed domains built in:
+
+| Service    | Default allowed domains    |
+| ---------- | -------------------------- |
+| `gmail`    | `*.googleapis.com`         |
+| `calendar` | `*.googleapis.com`         |
+| `github`   | `api.github.com`           |
+| `slack`    | `slack.com`, `*.slack.com` |
+
+```bash
+auth0-tv fetch github https://api.github.com/user
+auth0-tv fetch gmail https://gmail.googleapis.com/gmail/v1/users/me/messages
+auth0-tv fetch slack https://slack.com/api/conversations.list
+auth0-tv fetch github https://api.github.com/repos/octocat/Hello-World/issues -X POST -d '{"title":"Bug"}'
+auth0-tv fetch github https://api.github.com/user -H "Accept: application/vnd.github.v3+json"
+auth0-tv fetch slack https://slack.com/api/chat.postMessage -X POST --data-file ./payload.json
+```
+
+The `Authorization: Bearer <token>` header is injected automatically. Add extra domains with `--allowed-domains` on `connect`:
+
+```bash
+auth0-tv connect github --allowed-domains "ghcr.io,uploads.github.com"
 ```
 
 ### Global Flags
@@ -360,7 +387,7 @@ MIT
 - [ ] Add more services (Google Drive, Google Contacts, Google Tasks, etc.)
 - [ ] Show scopes/grants in `auth0-tv connections` output
 - [ ] Use access_token instead of refresh token. Configurable
-- [ ] API pass-through for non-supported services (e.g. `auth0-tv gmail api <endpoint> [options]`)
+- [x] API pass-through via `auth0-tv fetch <service> <url>` with domain allowlisting
 - [ ] Refresh token expiry relies on error handling and re-authentication
 - [ ] MCP wrapper?
 - [ ] keytar replacement? Maybe with @napi-rs/keyring

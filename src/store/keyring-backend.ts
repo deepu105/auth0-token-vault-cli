@@ -1,12 +1,13 @@
 import keytar from 'keytar';
 import { log } from '../utils/logger.js';
-import type { Auth0Tokens, ConnectionToken, StoredConfig } from './types.js';
+import type { Auth0Tokens, ConnectionToken, ServiceSettings, StoredConfig } from './types.js';
 import type { CredentialBackend } from './backend.js';
 
 const SERVICE_NAME = 'auth0-tv';
 const AUTH0_CONFIG_ACCOUNT = 'AUTH0_CONFIG';
 const AUTH0_TOKENS_ACCOUNT = 'AUTH0_TOKENS';
 const CONNECTION_PREFIX = 'CONNECTION:';
+const SETTINGS_PREFIX = 'SETTINGS:';
 
 export class KeyringBackend implements CredentialBackend {
   async getConfig(): Promise<StoredConfig | null> {
@@ -83,6 +84,21 @@ export class KeyringBackend implements CredentialBackend {
     }
   }
 
+  async getServiceSettings(service: string): Promise<ServiceSettings | null> {
+    const raw = await this.get(`${SETTINGS_PREFIX}${service}`);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as ServiceSettings;
+    } catch {
+      log('failed to parse service settings for %s from keyring', service);
+      return null;
+    }
+  }
+
+  async saveServiceSettings(service: string, settings: ServiceSettings): Promise<void> {
+    await this.set(`${SETTINGS_PREFIX}${service}`, JSON.stringify(settings));
+  }
+
   async removeConnection(connection: string): Promise<boolean> {
     try {
       return await keytar.deletePassword(SERVICE_NAME, `${CONNECTION_PREFIX}${connection}`);
@@ -97,7 +113,7 @@ export class KeyringBackend implements CredentialBackend {
       const entries = await keytar.findCredentials(SERVICE_NAME);
       await Promise.all(
         entries
-          .filter((e) => e.account !== AUTH0_CONFIG_ACCOUNT)
+          .filter((e) => e.account !== AUTH0_CONFIG_ACCOUNT && !e.account.startsWith(SETTINGS_PREFIX))
           .map((e) => keytar.deletePassword(SERVICE_NAME, e.account))
       );
       log('keyring credentials cleared');

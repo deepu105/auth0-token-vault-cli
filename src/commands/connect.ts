@@ -13,6 +13,10 @@ export function registerConnectCommand(program: Command) {
   program
     .command('connect <service>')
     .description('Connect a third-party service (e.g. gmail)')
+    .option(
+      '--allowed-domains <domains>',
+      'Comma-separated domains allowed for `auth0-tv fetch` (e.g. api.github.com,api.slack.com)'
+    )
     .action(async (service: string, opts, cmd: Command) => {
       const serviceLower = service.toLowerCase();
       const mapping = getServiceEntry(serviceLower);
@@ -90,7 +94,24 @@ export function registerConnectCommand(program: Command) {
           process.stderr.write(chalk.yellow(`Warning: Token exchange failed — ${warning}\n`));
         }
 
+        // Save allowed domains if provided
+        if (opts.allowedDomains) {
+          const domains = opts.allowedDomains
+            .split(',')
+            .map((d: string) => d.trim().toLowerCase())
+            .filter(Boolean);
+          if (domains.length > 0) {
+            const existing = await store.getServiceSettings(serviceLower);
+            await store.saveServiceSettings(serviceLower, {
+              ...existing,
+              allowedDomains: domains,
+            });
+            log('saved allowed domains for %s: %o', serviceLower, domains);
+          }
+        }
+
         // Single JSON-safe output with full result
+        const settings = await store.getServiceSettings(serviceLower);
         output(
           {
             status: warning ? 'connected_with_warning' : 'connected',
@@ -98,6 +119,7 @@ export function registerConnectCommand(program: Command) {
             connection: result.connection,
             id: result.id,
             scopes: result.scopes,
+            ...(settings?.allowedDomains?.length ? { allowedDomains: settings.allowedDomains } : {}),
             ...(warning ? { warning } : {}),
           },
           warning

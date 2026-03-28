@@ -3,6 +3,7 @@ import {
   getServiceEntry,
   getConnectionForService,
   getScopesForService,
+  getAllowedDomainsForService,
   getServiceForConnection,
   getServicesForConnection,
   getAvailableServices,
@@ -36,9 +37,14 @@ describe('service-registry', () => {
     const entry = getServiceEntry('github');
     expect(entry).toBeDefined();
     expect(entry!.connection).toBe('github');
-    expect(entry!.scopes).toContain('repo');
-    expect(entry!.scopes).toContain('notifications');
-    expect(entry!.scopes).toContain('read:user');
+    expect(entry!.scopes).toEqual([]);
+  });
+
+  it('entries have default allowedDomains', () => {
+    expect(getServiceEntry('gmail')!.allowedDomains).toEqual(['*.googleapis.com']);
+    expect(getServiceEntry('calendar')!.allowedDomains).toEqual(['*.googleapis.com']);
+    expect(getServiceEntry('github')!.allowedDomains).toEqual(['api.github.com']);
+    expect(getServiceEntry('slack')!.allowedDomains).toEqual(['slack.com', '*.slack.com']);
   });
 
   it('getServiceEntry is case-insensitive', () => {
@@ -102,5 +108,14 @@ describe('service-registry', () => {
     expect(services).toContain('slack');
     expect(services).toContain('github');
     expect(services).toHaveLength(4);
+  });
+
+  it('getAllowedDomainsForService returns domains for known service', () => {
+    expect(getAllowedDomainsForService('github')).toEqual(['api.github.com']);
+    expect(getAllowedDomainsForService('Gmail')).toEqual(['*.googleapis.com']);
+  });
+
+  it('getAllowedDomainsForService returns undefined for unknown service', () => {
+    expect(getAllowedDomainsForService('unknown')).toBeUndefined();
   });
 });

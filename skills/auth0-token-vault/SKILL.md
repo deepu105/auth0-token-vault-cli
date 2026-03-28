@@ -4,8 +4,9 @@ description: >
   Access third-party services (Gmail, Slack, Google Calendar, GitHub) on behalf of
   authenticated users via Auth0 Token Vault. Use when the user wants to search,
   read, send, or manage emails, manage calendar events, interact with Slack,
-  manage GitHub repos/issues/PRs/notifications, connect or disconnect external
-  services, or check their authentication and connection status. Wraps the auth0-tv CLI.
+  manage GitHub repos/issues/PRs/notifications, make authenticated API calls to
+  third-party services, connect or disconnect external services, or check their
+  authentication and connection status. Wraps the auth0-tv CLI.
 compatibility: Requires Node.js 18+ and auth0-tv installed globally (npm i -g auth0-token-vault-cli)
 license: MIT
 allowed-tools: Bash(auth0-tv *)
@@ -88,6 +89,7 @@ All setup steps require human interaction. Do not attempt to run them autonomous
 - The user wants to view, create, update, or delete Google calendar events
 - The user wants to search Slack messages, post to channels, or manage their Slack status
 - The user wants to list repos, view issues/PRs, create issues, search code, or manage GitHub notifications
+- The user wants to make an authenticated API call to a third-party service
 - The user wants to connect or disconnect a third-party service (Gmail, Google Calendar, Slack, GitHub)
 - The user asks about their authentication or connection status
 
@@ -145,6 +147,7 @@ Prefer `--body-file` or stdin for messages containing special characters.
 - `auth0-tv logout` — clear stored credentials
 - `auth0-tv status` — show current user and connected services
 - `auth0-tv connect <service>` — connect a service via browser (human-in-the-loop)
+- `auth0-tv connect <service> --allowed-domains <domains>` — connect with extra allowed domains for `fetch`
 - `auth0-tv disconnect <service>` — disconnect a service (local token only by default)
 - `auth0-tv disconnect <service> --remote` — disconnect a service and remove the server-side connection
 - `auth0-tv connections` — list connected services (remote accounts with local token status)
@@ -204,5 +207,23 @@ Prefer `--body-file` or stdin for messages containing special characters.
 - `auth0-tv github search repos <query>` — search repositories
 - `auth0-tv github search code <query>` — search code
 - `auth0-tv github search issues <query>` — search issues and PRs
+
+### API passthrough (fetch)
+
+- `auth0-tv fetch <service> <url>` — make an authenticated HTTP request to an allowed domain
+- `auth0-tv fetch <service> <url> -X POST -d '{"key":"value"}'` — POST with inline body
+- `auth0-tv fetch <service> <url> -X POST --data-file ./body.json` — POST with body from file
+- `auth0-tv fetch <service> <url> -H "Accept: text/plain"` — add custom headers
+
+Each service has default allowed domains built in:
+
+| Service    | Default allowed domains    |
+| ---------- | -------------------------- |
+| `gmail`    | `*.googleapis.com`         |
+| `calendar` | `*.googleapis.com`         |
+| `github`   | `api.github.com`           |
+| `slack`    | `slack.com`, `*.slack.com` |
+
+Additional domains can be added via `--allowed-domains` on `connect`. Only HTTPS URLs are allowed.
 
 See [references/commands.md](references/commands.md) for full command reference with flags and JSON output examples.

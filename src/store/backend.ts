@@ -1,4 +1,4 @@
-import type { Auth0Tokens, ConnectionToken, StoredConfig } from './types.js';
+import type { Auth0Tokens, ConnectionToken, ServiceSettings, StoredConfig } from './types.js';
 
 /**
  * Storage backend contract for credential persistence.
@@ -14,6 +14,8 @@ export interface CredentialBackend {
   saveConnectionToken(connection: string, token: ConnectionToken): Promise<void>;
   listConnections(): Promise<string[]>;
   removeConnection(connection: string): Promise<boolean>;
-  /** Clears tokens and connections but preserves config. */
+  getServiceSettings(service: string): Promise<ServiceSettings | null>;
+  saveServiceSettings(service: string, settings: ServiceSettings): Promise<void>;
+  /** Clears tokens and connections but preserves config and service settings. */
   clear(): Promise<void>;
 }

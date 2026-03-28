@@ -20,8 +20,15 @@ export interface StoredConfig {
   audience?: string;
 }
 
+export interface ServiceSettings {
+  /** Allowed domains for the `fetch` command (e.g. ["api.github.com"]) */
+  allowedDomains: string[];
+}
+
 export interface CredentialData {
   config?: StoredConfig;
   auth0?: Auth0Tokens;
   connections: Record<string, ConnectionToken>;
+  /** Per-service settings keyed by service name (e.g. "gmail", "github") */
+  serviceSettings?: Record<string, ServiceSettings>;
 }

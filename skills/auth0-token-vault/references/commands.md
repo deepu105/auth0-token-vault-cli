@@ -68,9 +68,14 @@ Connect a third-party service. **Requires human interaction** (opens browser for
 ```bash
 auth0-tv connect gmail
 auth0-tv --port 18486 connect gmail
+auth0-tv connect github --allowed-domains "api.github.com,ghcr.io"
 ```
 
-Connect a service. No command-specific flags.
+| Flag                        | Description                                                         |
+| --------------------------- | ------------------------------------------------------------------- |
+| `--allowed-domains <list>`  | Comma-separated domains allowed for `auth0-tv fetch` (additive)     |
+
+Each service has default allowed domains built in. Use `--allowed-domains` only to add extra domains beyond the defaults.
 
 ### disconnect
 
@@ -713,6 +718,41 @@ auth0-tv --json github search issues "auth0" --sort comments --limit 10
 | ----------------- | ---------------------------------------- | ------- |
 | `-n, --limit <n>` | Maximum results to return                | 20      |
 | `--sort <field>`  | Sort by field (created/updated/comments) | —       |
+
+## API passthrough (fetch)
+
+Make an authenticated HTTP request to an allowed domain using a service's token. Only HTTPS URLs are permitted.
+
+### fetch
+
+```bash
+auth0-tv --json fetch github https://api.github.com/user
+auth0-tv --json fetch gmail https://gmail.googleapis.com/gmail/v1/users/me/messages -X GET
+auth0-tv --json fetch slack https://slack.com/api/conversations.list
+auth0-tv --json fetch github https://api.github.com/repos/octocat/Hello-World/issues -X POST -d '{"title":"Bug"}'
+auth0-tv --json fetch github https://api.github.com/user -H "Accept: application/vnd.github.v3+json"
+auth0-tv --json fetch slack https://slack.com/api/chat.postMessage -X POST --data-file ./payload.json
+```
+
+| Flag                     | Description                    | Default |
+| ------------------------ | ------------------------------ | ------- |
+| `-X, --method <method>`  | HTTP method                    | `GET`   |
+| `-H, --header <header>`  | Additional header (repeatable) | —       |
+| `-d, --data <body>`      | Request body (inline)          | —       |
+| `--data-file <path>`     | Read request body from file    | —       |
+
+**Default allowed domains per service:**
+
+| Service    | Default allowed domains           |
+| ---------- | --------------------------------- |
+| `gmail`    | `*.googleapis.com`                |
+| `calendar` | `*.googleapis.com`                |
+| `github`   | `api.github.com`                  |
+| `slack`    | `slack.com`, `*.slack.com`        |
+
+Additional domains can be added with `auth0-tv connect <service> --allowed-domains <list>`. Custom domains are merged with the defaults.
+
+The `Authorization: Bearer <token>` header is added automatically. You can add extra headers with `-H`.
 
 ## Exit codes
 
