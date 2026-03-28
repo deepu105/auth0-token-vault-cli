@@ -29,13 +29,7 @@ export function registerLoginCommand(program: Command) {
         });
 
         const existingToken = await store.getAuth0Token();
-        if (existingToken) {
-          output(
-            { status: 'already_logged_in' },
-            `${chalk.yellow('Already logged in.')} Re-authenticating...`,
-            cmd
-          );
-        }
+        const reauthenticated = Boolean(existingToken);
 
         const globals = cmd.optsWithGlobals();
         const browser = resolveBrowser(globals.browser);
@@ -49,7 +43,16 @@ export function registerLoginCommand(program: Command) {
           expiresAt: Date.now() + tokens.expires_in * 1000,
         });
 
-        output({ status: 'logged_in' }, chalk.green('Successfully logged in!'), cmd);
+        output(
+          {
+            status: 'logged_in',
+            ...(reauthenticated ? { reauthenticated: true } : {}),
+          },
+          reauthenticated
+            ? chalk.green('Successfully re-authenticated!')
+            : chalk.green('Successfully logged in!'),
+          cmd
+        );
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
 

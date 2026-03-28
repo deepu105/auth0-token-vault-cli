@@ -3,12 +3,22 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { log } from '../utils/logger.js';
 import { resolveStorageBackend, type Auth0Config } from '../utils/config.js';
-import type { Auth0Tokens, ConnectionToken, CredentialData, ServiceSettings, StoredConfig } from './types.js';
+import type {
+  Auth0Tokens,
+  ConnectionToken,
+  CredentialData,
+  ServiceSettings,
+  StoredConfig,
+} from './types.js';
 import { refreshAuth0Token } from '../auth/token-refresh.js';
 import type { CredentialBackend } from './backend.js';
 
 const DEFAULT_DIR = join(homedir(), '.auth0-tv');
 const CREDENTIALS_FILE = 'credentials.json';
+
+function resolveFileBackendDir(): string {
+  return process.env.AUTH0_TV_CONFIG_DIR || DEFAULT_DIR;
+}
 
 /** Proactive expiry buffer — treat tokens as expired 2 minutes early */
 export const EXPIRY_BUFFER_MS = 2 * 60 * 1000;
@@ -147,7 +157,7 @@ export class CredentialStore {
           return new KeyringBackend();
         };
       } else {
-        this.backend = new FileBackend(DEFAULT_DIR);
+        this.backend = new FileBackend(resolveFileBackendDir());
       }
     }
   }

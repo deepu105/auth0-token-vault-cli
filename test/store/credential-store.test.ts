@@ -199,6 +199,39 @@ describe('CredentialStore', () => {
     expect(await store2.getAuth0Token()).toBe('at-123');
     expect(await store2.getConnectionToken('google-oauth2')).toBe('gmail-token-abc');
   });
+
+  it('uses AUTH0_TV_CONFIG_DIR when file storage is selected without an explicit dir', async () => {
+    const previousStorage = process.env.AUTH0_TV_STORAGE;
+    const previousConfigDir = process.env.AUTH0_TV_CONFIG_DIR;
+
+    process.env.AUTH0_TV_STORAGE = 'file';
+    process.env.AUTH0_TV_CONFIG_DIR = tempDir;
+
+    try {
+      const envStore = new CredentialStore();
+      await envStore.saveConfig({
+        domain: 'env.auth0.com',
+        clientId: 'env-client',
+        clientSecret: 'env-secret',
+      });
+
+      const filePath = join(tempDir, 'credentials.json');
+      const raw = await readFile(filePath, 'utf-8');
+      expect(raw).toContain('env.auth0.com');
+    } finally {
+      if (previousStorage === undefined) {
+        delete process.env.AUTH0_TV_STORAGE;
+      } else {
+        process.env.AUTH0_TV_STORAGE = previousStorage;
+      }
+
+      if (previousConfigDir === undefined) {
+        delete process.env.AUTH0_TV_CONFIG_DIR;
+      } else {
+        process.env.AUTH0_TV_CONFIG_DIR = previousConfigDir;
+      }
+    }
+  });
 });
 
 // ── CredentialStore with custom backend (keyring facade test) ───

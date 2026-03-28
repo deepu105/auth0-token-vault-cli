@@ -1,6 +1,7 @@
 {
   "chat.tools.terminal.autoApprove": {
     "npx tsx": true,
-    "auth0": true
-  }
+    "auth0": true,
+    "npx prettier": true
+}
 }
