@@ -12,6 +12,7 @@ import { registerStatusCommand } from './commands/status.js';
 import { createGmailCommand } from './commands/gmail/index.js';
 import { createCalendarCommand } from './commands/calendar/index.js';
 import { createSlackCommand } from './commands/slack/index.js';
+import { createGitHubCommand } from './commands/github/index.js';
 
 // Global error handlers
 ['uncaughtException', 'unhandledRejection'].forEach((event) => {
@@ -59,6 +60,9 @@ program.addCommand(createCalendarCommand());
 
 // ── Slack subcommand group ────────────────────────────────────
 program.addCommand(createSlackCommand());
+
+// ── GitHub subcommand group ───────────────────────────────────
+program.addCommand(createGitHubCommand());
 
 // ── Unknown command handling ───────────────────────────────────
 program.on('command:*', () => {

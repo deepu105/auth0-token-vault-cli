@@ -307,9 +307,9 @@ auth0-tv --json calendar list
 auth0-tv --json calendar list --max-results 5
 ```
 
-| Flag                    | Description               | Default |
-| ----------------------- | ------------------------- | ------- |
-| `--max-results <n>`     | Maximum results to return | 100     |
+| Flag                | Description               | Default |
+| ------------------- | ------------------------- | ------- |
+| `--max-results <n>` | Maximum results to return | 100     |
 
 ### calendar events
 
@@ -321,14 +321,14 @@ auth0-tv --json calendar events primary --from 2026-03-28T00:00:00Z --to 2026-04
 auth0-tv --json calendar events --query "standup" --max-results 5
 ```
 
-| Flag                    | Description                         | Default   |
-| ----------------------- | ----------------------------------- | --------- |
-| `[calendarId]`          | Calendar ID                         | `primary` |
-| `--from <date>`         | Start date (ISO 8601)               | —         |
-| `--to <date>`           | End date (ISO 8601)                 | —         |
-| `--query <text>`        | Free-text search                    | —         |
-| `--max-results <n>`     | Maximum results to return           | 25        |
-| `--page-token <token>`  | Page token for pagination           | —         |
+| Flag                   | Description               | Default   |
+| ---------------------- | ------------------------- | --------- |
+| `[calendarId]`         | Calendar ID               | `primary` |
+| `--from <date>`        | Start date (ISO 8601)     | —         |
+| `--to <date>`          | End date (ISO 8601)       | —         |
+| `--query <text>`       | Free-text search          | —         |
+| `--max-results <n>`    | Maximum results to return | 25        |
+| `--page-token <token>` | Page token for pagination | —         |
 
 ### calendar get
 
@@ -339,9 +339,9 @@ auth0-tv --json calendar get <eventId>
 auth0-tv --json calendar get <eventId> --calendar <calendarId>
 ```
 
-| Flag                  | Description  | Default   |
-| --------------------- | ------------ | --------- |
-| `--calendar <id>`     | Calendar ID  | `primary` |
+| Flag              | Description | Default   |
+| ----------------- | ----------- | --------- |
+| `--calendar <id>` | Calendar ID | `primary` |
 
 ### calendar create
 
@@ -352,15 +352,15 @@ auth0-tv --json --confirm calendar create --summary "Meeting" --start 2026-03-28
 auth0-tv --json --confirm calendar create --summary "Lunch" --start 2026-03-28T12:00:00 --end 2026-03-28T13:00:00 --location "Cafe" --attendees "a@b.com,c@d.com" --description "Team lunch"
 ```
 
-| Flag                      | Description                       |
-| ------------------------- | --------------------------------- |
-| `--summary <text>`        | Event title (required)            |
-| `--start <datetime>`      | Start time, ISO 8601 (required)   |
-| `--end <datetime>`        | End time, ISO 8601 (required)     |
-| `--location <text>`       | Event location                    |
-| `--description <text>`    | Event description                 |
-| `--attendees <emails>`    | Comma-separated attendee emails   |
-| `--calendar <id>`         | Calendar ID (default: `primary`)  |
+| Flag                   | Description                      |
+| ---------------------- | -------------------------------- |
+| `--summary <text>`     | Event title (required)           |
+| `--start <datetime>`   | Start time, ISO 8601 (required)  |
+| `--end <datetime>`     | End time, ISO 8601 (required)    |
+| `--location <text>`    | Event location                   |
+| `--description <text>` | Event description                |
+| `--attendees <emails>` | Comma-separated attendee emails  |
+| `--calendar <id>`      | Calendar ID (default: `primary`) |
 
 ### calendar update
 
@@ -373,15 +373,15 @@ auth0-tv --json --confirm calendar update <eventId> --start 2026-03-28T14:00:00 
 
 All fields are optional — only provided fields are updated (uses PATCH).
 
-| Flag                      | Description                       |
-| ------------------------- | --------------------------------- |
-| `--summary <text>`        | Event title                       |
-| `--start <datetime>`      | Start time, ISO 8601              |
-| `--end <datetime>`        | End time, ISO 8601                |
-| `--location <text>`       | Event location                    |
-| `--description <text>`    | Event description                 |
-| `--attendees <emails>`    | Comma-separated attendee emails   |
-| `--calendar <id>`         | Calendar ID (default: `primary`)  |
+| Flag                   | Description                      |
+| ---------------------- | -------------------------------- |
+| `--summary <text>`     | Event title                      |
+| `--start <datetime>`   | Start time, ISO 8601             |
+| `--end <datetime>`     | End time, ISO 8601               |
+| `--location <text>`    | Event location                   |
+| `--description <text>` | Event description                |
+| `--attendees <emails>` | Comma-separated attendee emails  |
+| `--calendar <id>`      | Calendar ID (default: `primary`) |
 
 ### calendar delete
 
@@ -392,9 +392,9 @@ auth0-tv --json --confirm calendar delete <eventId>
 auth0-tv --json --confirm calendar delete <eventId> --calendar <calendarId>
 ```
 
-| Flag              | Description                       |
-| ----------------- | --------------------------------- |
-| `--calendar <id>` | Calendar ID (default: `primary`)  |
+| Flag              | Description                      |
+| ----------------- | -------------------------------- |
+| `--calendar <id>` | Calendar ID (default: `primary`) |
 
 ### calendar quick-add
 
@@ -404,9 +404,9 @@ Create an event using natural language. **Destructive — requires `--confirm`.*
 auth0-tv --json --confirm calendar quick-add "Lunch with Alice tomorrow at noon at Cafe Nero"
 ```
 
-| Flag              | Description                       |
-| ----------------- | --------------------------------- |
-| `--calendar <id>` | Calendar ID (default: `primary`)  |
+| Flag              | Description                      |
+| ----------------- | -------------------------------- |
+| `--calendar <id>` | Calendar ID (default: `primary`) |
 
 ## Slack commands
 
@@ -421,10 +421,10 @@ auth0-tv --json slack channels
 auth0-tv --json slack channels --limit 50
 ```
 
-| Flag              | Description               | Default |
-| ----------------- | ------------------------- | ------- |
-| `--limit <n>`     | Maximum results per page  | 100     |
-| `--cursor <token>`| Pagination cursor         | —       |
+| Flag               | Description              | Default |
+| ------------------ | ------------------------ | ------- |
+| `--limit <n>`      | Maximum results per page | 100     |
+| `--cursor <token>` | Pagination cursor        | —       |
 
 ### slack messages
 
@@ -435,12 +435,12 @@ auth0-tv --json slack messages C1234567890
 auth0-tv --json slack messages C1234567890 --limit 20 --oldest 1609459200
 ```
 
-| Flag               | Description                    | Default |
-| ------------------ | ------------------------------ | ------- |
-| `--limit <n>`      | Maximum messages per page      | 50      |
-| `--cursor <token>` | Pagination cursor              | —       |
-| `--oldest <ts>`    | Start of time range (Unix ts)  | —       |
-| `--latest <ts>`    | End of time range (Unix ts)    | —       |
+| Flag               | Description                   | Default |
+| ------------------ | ----------------------------- | ------- |
+| `--limit <n>`      | Maximum messages per page     | 50      |
+| `--cursor <token>` | Pagination cursor             | —       |
+| `--oldest <ts>`    | Start of time range (Unix ts) | —       |
+| `--latest <ts>`    | End of time range (Unix ts)   | —       |
 
 ### slack search
 
@@ -451,12 +451,12 @@ auth0-tv --json slack search "project update"
 auth0-tv --json slack search "from:@alice in:#general" --count 5
 ```
 
-| Flag                | Description                        | Default     |
-| ------------------- | ---------------------------------- | ----------- |
-| `--sort <field>`    | Sort by `timestamp` or `score`     | `timestamp` |
-| `--sort-dir <dir>`  | Sort direction: `asc` or `desc`    | `desc`      |
-| `--count <n>`       | Results per page (max 100)         | 20          |
-| `--page <n>`        | Page number (1-indexed)            | 1           |
+| Flag               | Description                     | Default     |
+| ------------------ | ------------------------------- | ----------- |
+| `--sort <field>`   | Sort by `timestamp` or `score`  | `timestamp` |
+| `--sort-dir <dir>` | Sort direction: `asc` or `desc` | `desc`      |
+| `--count <n>`      | Results per page (max 100)      | 20          |
+| `--page <n>`       | Page number (1-indexed)         | 1           |
 
 ### slack post
 
@@ -466,9 +466,9 @@ Post a message to a channel. **Destructive — requires `--confirm`.**
 auth0-tv --json --confirm slack post C1234567890 --text "Hello team!"
 ```
 
-| Flag           | Description              |
-| -------------- | ------------------------ |
-| `--text <msg>` | Message text (required)  |
+| Flag           | Description             |
+| -------------- | ----------------------- |
+| `--text <msg>` | Message text (required) |
 
 ### slack reply
 
@@ -478,9 +478,9 @@ Reply to a thread. **Destructive — requires `--confirm`.**
 auth0-tv --json --confirm slack reply C1234567890 1234567890.123456 --text "Got it!"
 ```
 
-| Flag           | Description              |
-| -------------- | ------------------------ |
-| `--text <msg>` | Reply text (required)    |
+| Flag           | Description           |
+| -------------- | --------------------- |
+| `--text <msg>` | Reply text (required) |
 
 ### slack react
 
@@ -491,10 +491,10 @@ auth0-tv --json slack react C1234567890 1234567890.123456 --add thumbsup
 auth0-tv --json slack react C1234567890 1234567890.123456 --remove thumbsup
 ```
 
-| Flag              | Description                      |
-| ----------------- | -------------------------------- |
-| `--add <emoji>`   | Emoji name to add (no colons)    |
-| `--remove <emoji>`| Emoji name to remove (no colons) |
+| Flag               | Description                      |
+| ------------------ | -------------------------------- |
+| `--add <emoji>`    | Emoji name to add (no colons)    |
+| `--remove <emoji>` | Emoji name to remove (no colons) |
 
 ### slack users
 
@@ -505,10 +505,10 @@ auth0-tv --json slack users
 auth0-tv --json slack users --limit 50
 ```
 
-| Flag              | Description              | Default |
-| ----------------- | ------------------------ | ------- |
-| `--limit <n>`     | Maximum results per page | 200     |
-| `--cursor <token>`| Pagination cursor        | —       |
+| Flag               | Description              | Default |
+| ------------------ | ------------------------ | ------- |
+| `--limit <n>`      | Maximum results per page | 200     |
+| `--cursor <token>` | Pagination cursor        | —       |
 
 ### slack user
 
@@ -526,11 +526,193 @@ Set your Slack status.
 auth0-tv --json slack status --text "In a meeting" --emoji ":calendar:" --expiration 60
 ```
 
-| Flag                  | Description                            |
-| --------------------- | -------------------------------------- |
-| `--text <text>`       | Status text (required)                 |
-| `--emoji <emoji>`     | Status emoji (e.g. `:calendar:`)       |
-| `--expiration <mins>` | Minutes until status expires (0 = never)|
+| Flag                  | Description                              |
+| --------------------- | ---------------------------------------- |
+| `--text <text>`       | Status text (required)                   |
+| `--emoji <emoji>`     | Status emoji (e.g. `:calendar:`)         |
+| `--expiration <mins>` | Minutes until status expires (0 = never) |
+
+## GitHub commands
+
+All GitHub commands require a connected GitHub account. If not connected, the CLI exits with code 4.
+
+### github repos
+
+List your GitHub repositories.
+
+```bash
+auth0-tv --json github repos
+auth0-tv --json github repos --limit 10 --sort stars --type all
+```
+
+| Flag              | Description                                      | Default   |
+| ----------------- | ------------------------------------------------ | --------- |
+| `-n, --limit <n>` | Maximum repos to return                          | 30        |
+| `--sort <field>`  | Sort by field (created/updated/pushed/full_name) | `updated` |
+| `--type <type>`   | Filter by type (all/owner/member)                | `owner`   |
+
+### github repo
+
+Get details of a specific repository.
+
+```bash
+auth0-tv --json github repo octocat/Hello-World
+```
+
+### github issues
+
+List issues for a repository.
+
+```bash
+auth0-tv --json github issues octocat/Hello-World
+auth0-tv --json github issues octocat/Hello-World --state closed --labels "bug,enhancement"
+```
+
+| Flag                | Description                       | Default |
+| ------------------- | --------------------------------- | ------- |
+| `--state <state>`   | Filter by state (open/closed/all) | `open`  |
+| `-n, --limit <n>`   | Maximum issues to return          | 30      |
+| `--labels <labels>` | Comma-separated label filter      | —       |
+
+### github issue get
+
+Get details of a specific issue.
+
+```bash
+auth0-tv --json github issue get octocat/Hello-World 42
+```
+
+### github issue create
+
+Create a new issue. **Destructive — requires `--confirm`.**
+
+```bash
+auth0-tv --json --confirm github issue create octocat/Hello-World --title "Bug report" --body "Steps to reproduce..."
+auth0-tv --json --confirm github issue create octocat/Hello-World --title "Feature" --labels "enhancement" --assignees "octocat"
+```
+
+| Flag                      | Description               |
+| ------------------------- | ------------------------- |
+| `--title <title>`         | Issue title (required)    |
+| `--body <body>`           | Issue body                |
+| `--labels <labels>`       | Comma-separated labels    |
+| `--assignees <assignees>` | Comma-separated assignees |
+
+### github issue comment
+
+Add a comment to an issue. **Destructive — requires `--confirm`.**
+
+```bash
+auth0-tv --json --confirm github issue comment octocat/Hello-World 42 --body "Looks good!"
+```
+
+| Flag            | Description             |
+| --------------- | ----------------------- |
+| `--body <body>` | Comment body (required) |
+
+### github issue close
+
+Close an issue. **Destructive — requires `--confirm`.**
+
+```bash
+auth0-tv --json --confirm github issue close octocat/Hello-World 42
+```
+
+### github prs
+
+List pull requests for a repository.
+
+```bash
+auth0-tv --json github prs octocat/Hello-World
+auth0-tv --json github prs octocat/Hello-World --state all --limit 10
+```
+
+| Flag              | Description                       | Default |
+| ----------------- | --------------------------------- | ------- |
+| `--state <state>` | Filter by state (open/closed/all) | `open`  |
+| `-n, --limit <n>` | Maximum pull requests to return   | 30      |
+
+### github pr get
+
+Get details of a specific pull request.
+
+```bash
+auth0-tv --json github pr get octocat/Hello-World 42
+```
+
+### github pr comment
+
+Add a comment to a pull request. **Destructive — requires `--confirm`.**
+
+```bash
+auth0-tv --json --confirm github pr comment octocat/Hello-World 42 --body "LGTM!"
+```
+
+| Flag            | Description             |
+| --------------- | ----------------------- |
+| `--body <text>` | Comment body (required) |
+
+### github notifications
+
+List your GitHub notifications.
+
+```bash
+auth0-tv --json github notifications
+auth0-tv --json github notifications --all --limit 50
+```
+
+| Flag              | Description                     | Default |
+| ----------------- | ------------------------------- | ------- |
+| `--all`           | Include read notifications      | false   |
+| `-n, --limit <n>` | Maximum notifications to return | 30      |
+
+### github notification read
+
+Mark a notification as read. **Destructive — requires `--confirm`.**
+
+```bash
+auth0-tv --json --confirm github notification read <notificationId>
+```
+
+### github search repos
+
+Search GitHub repositories.
+
+```bash
+auth0-tv --json github search repos "auth0 language:typescript"
+auth0-tv --json github search repos "cli" --sort stars --limit 10
+```
+
+| Flag              | Description                         | Default |
+| ----------------- | ----------------------------------- | ------- |
+| `-n, --limit <n>` | Maximum results to return           | 20      |
+| `--sort <field>`  | Sort by field (stars/forks/updated) | —       |
+
+### github search code
+
+Search code across GitHub.
+
+```bash
+auth0-tv --json github search code "handleError repo:octocat/Hello-World"
+```
+
+| Flag              | Description               | Default |
+| ----------------- | ------------------------- | ------- |
+| `-n, --limit <n>` | Maximum results to return | 20      |
+
+### github search issues
+
+Search issues and pull requests.
+
+```bash
+auth0-tv --json github search issues "bug label:critical"
+auth0-tv --json github search issues "auth0" --sort comments --limit 10
+```
+
+| Flag              | Description                              | Default |
+| ----------------- | ---------------------------------------- | ------- |
+| `-n, --limit <n>` | Maximum results to return                | 20      |
+| `--sort <field>`  | Sort by field (created/updated/comments) | —       |
 
 ## Exit codes
 

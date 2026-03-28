@@ -7,7 +7,7 @@ Access third-party [services](https://auth0.com/ai/docs/integrations/overview) (
 - [Gmail](https://auth0.com/ai/docs/integrations/google)
 - [Google Calendar](https://auth0.com/ai/docs/integrations/google)
 - [Slack](https://auth0.com/ai/docs/integrations/slack)
-- [Github](https://auth0.com/ai/docs/integrations/github) - coming soon!
+- [GitHub](https://auth0.com/ai/docs/integrations/github)
 - [Google Drive](https://auth0.com/ai/docs/integrations/google) - coming soon!
 - [Google Contacts](https://auth0.com/ai/docs/integrations/google) - coming soon!
 - [Google Tasks](https://auth0.com/ai/docs/integrations/google) - coming soon!
@@ -97,6 +97,7 @@ auth0-tv login
 auth0-tv connect gmail
 auth0-tv connect calendar
 auth0-tv connect slack
+auth0-tv connect github
 ```
 
 ### 3. Search emails
@@ -172,6 +173,7 @@ auth0-tv status                   # Show current user and connected services
 auth0-tv connect gmail            # Connect Gmail (opens browser)
 auth0-tv connect calendar         # Connect Google Calendar
 auth0-tv connect slack            # Connect Slack
+auth0-tv connect github           # Connect GitHub
 auth0-tv --port 18486 connect gmail
 auth0-tv --port 18486 logout
 auth0-tv connections              # List connected services (remote + local status)
@@ -226,6 +228,29 @@ auth0-tv slack react <channel> <timestamp> --remove thumbsup
 auth0-tv slack users                             # List users
 auth0-tv slack user <userId>                     # Get user info
 auth0-tv slack status --text "In a meeting" --emoji ":calendar:" --expiration 60
+```
+
+### GitHub
+
+```bash
+auth0-tv github repos                              # List your repositories
+auth0-tv github repos --sort stars --type all      # Sort by stars, all types
+auth0-tv github repo octocat/Hello-World           # Get repository details
+auth0-tv github issues octocat/Hello-World         # List issues
+auth0-tv github issues octocat/Hello-World --state closed --labels bug
+auth0-tv github issue get octocat/Hello-World 1    # Get issue details
+auth0-tv github issue create octocat/Hello-World --title "Bug" --body "Details"
+auth0-tv github issue comment octocat/Hello-World 1 --body "Fixed!"
+auth0-tv github issue close octocat/Hello-World 1  # Close an issue
+auth0-tv github prs octocat/Hello-World            # List pull requests
+auth0-tv github pr get octocat/Hello-World 42      # Get PR details
+auth0-tv github pr comment octocat/Hello-World 42 --body "LGTM"
+auth0-tv github notifications                      # List unread notifications
+auth0-tv github notifications --all                # Include read notifications
+auth0-tv github notification read <id>             # Mark notification as read
+auth0-tv github search repos "auth0 language:typescript"
+auth0-tv github search code "handleError repo:octocat/Hello-World"
+auth0-tv github search issues "bug label:critical"
 ```
 
 ### Global Flags
@@ -331,7 +356,9 @@ MIT
 
 ## Gaps/Todo
 
-- [ ] Add more services (Slack, Google Calendar, etc.)
+- [ ] Demo video
+- [ ] Add more services (Google Drive, Google Contacts, Google Tasks, etc.)
+- [ ] Show scopes/grants in `auth0-tv connections` output
 - [ ] Use access_token instead of refresh token. Configurable
 - [ ] API pass-through for non-supported services (e.g. `auth0-tv gmail api <endpoint> [options]`)
 - [ ] Refresh token expiry relies on error handling and re-authentication

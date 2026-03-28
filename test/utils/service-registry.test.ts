@@ -32,11 +32,21 @@ describe('service-registry', () => {
     expect(entry!.scopes).toContain('search:read');
   });
 
+  it('getServiceEntry returns github entry', () => {
+    const entry = getServiceEntry('github');
+    expect(entry).toBeDefined();
+    expect(entry!.connection).toBe('github');
+    expect(entry!.scopes).toContain('repo');
+    expect(entry!.scopes).toContain('notifications');
+    expect(entry!.scopes).toContain('read:user');
+  });
+
   it('getServiceEntry is case-insensitive', () => {
     expect(getServiceEntry('Gmail')).toBeDefined();
     expect(getServiceEntry('GMAIL')).toBeDefined();
     expect(getServiceEntry('Calendar')).toBeDefined();
     expect(getServiceEntry('Slack')).toBeDefined();
+    expect(getServiceEntry('GitHub')).toBeDefined();
   });
 
   it('getServiceEntry returns undefined for unknown service', () => {
@@ -47,6 +57,7 @@ describe('service-registry', () => {
     expect(getConnectionForService('gmail')).toBe('google-oauth2');
     expect(getConnectionForService('calendar')).toBe('google-oauth2');
     expect(getConnectionForService('slack')).toBe('sign-in-with-slack');
+    expect(getConnectionForService('github')).toBe('github');
   });
 
   it('getConnectionForService returns undefined for unknown service', () => {
@@ -77,6 +88,7 @@ describe('service-registry', () => {
 
   it('getServicesForConnection returns single service', () => {
     expect(getServicesForConnection('sign-in-with-slack')).toEqual(['slack']);
+    expect(getServicesForConnection('github')).toEqual(['github']);
   });
 
   it('getServicesForConnection returns empty for unknown connection', () => {
@@ -88,6 +100,7 @@ describe('service-registry', () => {
     expect(services).toContain('gmail');
     expect(services).toContain('calendar');
     expect(services).toContain('slack');
-    expect(services).toHaveLength(3);
+    expect(services).toContain('github');
+    expect(services).toHaveLength(4);
   });
 });

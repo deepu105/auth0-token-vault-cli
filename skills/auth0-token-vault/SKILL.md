@@ -1,10 +1,11 @@
 ---
 name: auth0-token-vault
 description: >
-  Access third-party services (Gmail, Slack, Google Calendar) on behalf of
+  Access third-party services (Gmail, Slack, Google Calendar, GitHub) on behalf of
   authenticated users via Auth0 Token Vault. Use when the user wants to search,
-  read, send, or manage emails, connect or disconnect external services, or
-  check their authentication and connection status. Wraps the auth0-tv CLI.
+  read, send, or manage emails, manage calendar events, interact with Slack,
+  manage GitHub repos/issues/PRs/notifications, connect or disconnect external
+  services, or check their authentication and connection status. Wraps the auth0-tv CLI.
 compatibility: Requires Node.js 18+ and auth0-tv installed globally (npm i -g auth0-token-vault-cli)
 license: MIT
 allowed-tools: Bash(auth0-tv *)
@@ -86,7 +87,8 @@ All setup steps require human interaction. Do not attempt to run them autonomous
 - The user wants to manage email drafts or labels
 - The user wants to view, create, update, or delete Google calendar events
 - The user wants to search Slack messages, post to channels, or manage their Slack status
-- The user wants to connect or disconnect a third-party service (Gmail, Google Calendar, Slack)
+- The user wants to list repos, view issues/PRs, create issues, search code, or manage GitHub notifications
+- The user wants to connect or disconnect a third-party service (Gmail, Google Calendar, Slack, GitHub)
 - The user asks about their authentication or connection status
 
 ## Key patterns
@@ -184,5 +186,23 @@ Prefer `--body-file` or stdin for messages containing special characters.
 - `auth0-tv slack users` — list users
 - `auth0-tv slack user <userId>` — get user info
 - `auth0-tv slack status` — set your status
+
+### GitHub
+
+- `auth0-tv github repos` — list your repositories
+- `auth0-tv github repo <owner/repo>` — get repository details
+- `auth0-tv github issues <owner/repo>` — list issues
+- `auth0-tv github issue get <owner/repo> <number>` — get issue details
+- `auth0-tv github issue create <owner/repo>` — create an issue (destructive)
+- `auth0-tv github issue comment <owner/repo> <number>` — comment on an issue (destructive)
+- `auth0-tv github issue close <owner/repo> <number>` — close an issue (destructive)
+- `auth0-tv github prs <owner/repo>` — list pull requests
+- `auth0-tv github pr get <owner/repo> <number>` — get PR details
+- `auth0-tv github pr comment <owner/repo> <number>` — comment on a PR (destructive)
+- `auth0-tv github notifications` — list notifications
+- `auth0-tv github notification read <id>` — mark notification as read (destructive)
+- `auth0-tv github search repos <query>` — search repositories
+- `auth0-tv github search code <query>` — search code
+- `auth0-tv github search issues <query>` — search issues and PRs
 
 See [references/commands.md](references/commands.md) for full command reference with flags and JSON output examples.

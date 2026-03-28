@@ -29,6 +29,12 @@ const SERVICE_REGISTRY: Record<string, ServiceEntry> = {
       'https://www.googleapis.com/auth/calendar.events',
     ],
   },
+  github: {
+    connection: 'github',
+    scopes: [
+      /* GitHub apps use fine grained auth */
+    ],
+  },
   slack: {
     connection: 'sign-in-with-slack',
     scopes: [
