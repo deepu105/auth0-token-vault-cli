@@ -1,7 +1,4 @@
-import {
-  EXIT_AUTH_REQUIRED,
-  EXIT_AUTHZ_REQUIRED,
-} from './exit-codes.js';
+import { EXIT_AUTH_REQUIRED, EXIT_AUTHZ_REQUIRED } from './exit-codes.js';
 import { capitalize } from './format-helpers.js';
 
 /** Classify Google API errors (gmail, calendar). */

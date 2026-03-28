@@ -71,9 +71,9 @@ auth0-tv --port 18486 connect gmail
 auth0-tv connect github --allowed-domains "api.github.com,ghcr.io"
 ```
 
-| Flag                        | Description                                                         |
-| --------------------------- | ------------------------------------------------------------------- |
-| `--allowed-domains <list>`  | Comma-separated domains allowed for `auth0-tv fetch` (additive)     |
+| Flag                       | Description                                                     |
+| -------------------------- | --------------------------------------------------------------- |
+| `--allowed-domains <list>` | Comma-separated domains allowed for `auth0-tv fetch` (additive) |
 
 Each service has default allowed domains built in. Use `--allowed-domains` only to add extra domains beyond the defaults.
 
@@ -734,21 +734,21 @@ auth0-tv --json fetch github https://api.github.com/user -H "Accept: application
 auth0-tv --json fetch slack https://slack.com/api/chat.postMessage -X POST --data-file ./payload.json
 ```
 
-| Flag                     | Description                    | Default |
-| ------------------------ | ------------------------------ | ------- |
-| `-X, --method <method>`  | HTTP method                    | `GET`   |
-| `-H, --header <header>`  | Additional header (repeatable) | —       |
-| `-d, --data <body>`      | Request body (inline)          | —       |
-| `--data-file <path>`     | Read request body from file    | —       |
+| Flag                    | Description                    | Default |
+| ----------------------- | ------------------------------ | ------- |
+| `-X, --method <method>` | HTTP method                    | `GET`   |
+| `-H, --header <header>` | Additional header (repeatable) | —       |
+| `-d, --data <body>`     | Request body (inline)          | —       |
+| `--data-file <path>`    | Read request body from file    | —       |
 
 **Default allowed domains per service:**
 
-| Service    | Default allowed domains           |
-| ---------- | --------------------------------- |
-| `gmail`    | `*.googleapis.com`                |
-| `calendar` | `*.googleapis.com`                |
-| `github`   | `api.github.com`                  |
-| `slack`    | `slack.com`, `*.slack.com`        |
+| Service    | Default allowed domains    |
+| ---------- | -------------------------- |
+| `gmail`    | `*.googleapis.com`         |
+| `calendar` | `*.googleapis.com`         |
+| `github`   | `api.github.com`           |
+| `slack`    | `slack.com`, `*.slack.com` |
 
 Additional domains can be added with `auth0-tv connect <service> --allowed-domains <list>`. Custom domains are merged with the defaults.
 

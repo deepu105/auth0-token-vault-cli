@@ -9,7 +9,11 @@ import {
 } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
 import { exchangeForConnectionToken, TokenExchangeError } from '../auth/token-exchange.js';
-import { getConnectionForService, getAvailableServices, getAllowedDomainsForService } from '../utils/service-registry.js';
+import {
+  getConnectionForService,
+  getAvailableServices,
+  getAllowedDomainsForService,
+} from '../utils/service-registry.js';
 
 /**
  * Validate that a URL's hostname is in the allowed domains list.
@@ -58,18 +62,12 @@ export function registerFetchCommand(program: Command) {
       try {
         parsedUrl = new URL(url);
       } catch {
-        outputError(
-          { code: 'invalid_url', message: `Invalid URL: ${url}` },
-          cmd
-        );
+        outputError({ code: 'invalid_url', message: `Invalid URL: ${url}` }, cmd);
         process.exit(EXIT_INVALID_INPUT);
       }
 
       if (parsedUrl.protocol !== 'https:') {
-        outputError(
-          { code: 'invalid_url', message: 'Only HTTPS URLs are allowed.' },
-          cmd
-        );
+        outputError({ code: 'invalid_url', message: 'Only HTTPS URLs are allowed.' }, cmd);
         process.exit(EXIT_INVALID_INPUT);
       }
 
@@ -78,9 +76,10 @@ export function registerFetchCommand(program: Command) {
       const settings = await store.getServiceSettings(serviceLower);
       const storedDomains = settings?.allowedDomains ?? [];
       const defaultDomains = getAllowedDomainsForService(serviceLower) ?? [];
-      const allowedDomains = storedDomains.length > 0
-        ? [...new Set([...storedDomains, ...defaultDomains])]
-        : defaultDomains;
+      const allowedDomains =
+        storedDomains.length > 0
+          ? [...new Set([...storedDomains, ...defaultDomains])]
+          : defaultDomains;
 
       if (allowedDomains.length === 0) {
         outputError(
@@ -129,7 +128,10 @@ export function registerFetchCommand(program: Command) {
           const colonIdx = h.indexOf(':');
           if (colonIdx === -1) {
             outputError(
-              { code: 'invalid_header', message: `Invalid header format: "${h}". Use "Key: Value".` },
+              {
+                code: 'invalid_header',
+                message: `Invalid header format: "${h}". Use "Key: Value".`,
+              },
               cmd
             );
             process.exit(EXIT_INVALID_INPUT);
@@ -173,9 +175,7 @@ export function registerFetchCommand(program: Command) {
               statusText: response.statusText,
               body: responseBody,
             },
-            typeof responseBody === 'string'
-              ? responseBody
-              : JSON.stringify(responseBody, null, 2),
+            typeof responseBody === 'string' ? responseBody : JSON.stringify(responseBody, null, 2),
             cmd
           );
           process.exit(EXIT_SERVICE_ERROR);
@@ -186,9 +186,7 @@ export function registerFetchCommand(program: Command) {
             status: response.status,
             body: responseBody,
           },
-          typeof responseBody === 'string'
-            ? responseBody
-            : JSON.stringify(responseBody, null, 2),
+          typeof responseBody === 'string' ? responseBody : JSON.stringify(responseBody, null, 2),
           cmd
         );
       } catch (err) {

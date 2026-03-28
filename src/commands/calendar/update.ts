@@ -33,11 +33,7 @@ export function registerUpdateCommand(calendar: Command) {
 
         const event = await client.updateEvent(opts.calendar, eventId, patch);
 
-        output(
-          { data: event },
-          chalk.green(`Event updated (id: ${event.id})`),
-          cmd
-        );
+        output({ data: event }, chalk.green(`Event updated (id: ${event.id})`), cmd);
       } catch (err) {
         handleCalendarError(err, cmd);
       }

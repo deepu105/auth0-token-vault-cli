@@ -119,7 +119,9 @@ export function registerConnectCommand(program: Command) {
             connection: result.connection,
             id: result.id,
             scopes: result.scopes,
-            ...(settings?.allowedDomains?.length ? { allowedDomains: settings.allowedDomains } : {}),
+            ...(settings?.allowedDomains?.length
+              ? { allowedDomains: settings.allowedDomains }
+              : {}),
             ...(warning ? { warning } : {}),
           },
           warning

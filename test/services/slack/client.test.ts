@@ -65,11 +65,15 @@ describe('SlackClient', () => {
   // ── Reactions ────────────────────────────────────────────────
 
   it('addReaction completes without error', async () => {
-    await expect(client.addReaction('C001', '1711360000.000001', 'thumbsup')).resolves.toBeUndefined();
+    await expect(
+      client.addReaction('C001', '1711360000.000001', 'thumbsup')
+    ).resolves.toBeUndefined();
   });
 
   it('removeReaction completes without error', async () => {
-    await expect(client.removeReaction('C001', '1711360000.000001', 'thumbsup')).resolves.toBeUndefined();
+    await expect(
+      client.removeReaction('C001', '1711360000.000001', 'thumbsup')
+    ).resolves.toBeUndefined();
   });
 
   // ── Users ────────────────────────────────────────────────────

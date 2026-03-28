@@ -15,11 +15,7 @@ export function registerQuickAddCommand(calendar: Command) {
         const client = await createCalendarClient(cmd);
         const event = await client.quickAdd(opts.calendar, text);
 
-        output(
-          { data: event },
-          chalk.green(`Event created (id: ${event.id})`),
-          cmd
-        );
+        output({ data: event }, chalk.green(`Event created (id: ${event.id})`), cmd);
       } catch (err) {
         handleCalendarError(err, cmd);
       }

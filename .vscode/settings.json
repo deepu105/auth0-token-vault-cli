@@ -3,5 +3,5 @@
     "npx tsx": true,
     "auth0": true,
     "npx prettier": true
-}
+  }
 }

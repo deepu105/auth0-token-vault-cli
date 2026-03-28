@@ -1,5 +1,5 @@
 ---
-title: "feat: Add GitHub service"
+title: 'feat: Add GitHub service'
 type: feat
 status: active
 date: 2026-03-28
@@ -46,11 +46,13 @@ The CLI currently supports Gmail, Calendar, and Slack. GitHub is listed as "comi
 **Dependencies:** None
 
 **Files:**
+
 - Modify: `src/utils/service-registry.ts`
 - Modify: `package.json`
 - Modify: `test/utils/service-registry.test.ts`
 
 **Approach:**
+
 - Add `github` entry with connection `github` and scopes `['repo', 'notifications', 'read:user']`
 - `npm install @octokit/rest`
 - Update service registry tests: entry lookup, connection mapping, available services count (3 → 4)
@@ -58,6 +60,7 @@ The CLI currently supports Gmail, Calendar, and Slack. GitHub is listed as "comi
 **Patterns to follow:** Existing `slack` entry in service-registry.ts
 
 **Test scenarios:**
+
 - `getServiceEntry('github')` returns correct connection and scopes
 - `getAvailableServices()` includes `github`
 - `getServicesForConnection('github')` returns `['github']`
@@ -75,6 +78,7 @@ The CLI currently supports Gmail, Calendar, and Slack. GitHub is listed as "comi
 **Dependencies:** Unit 1
 
 **Files:**
+
 - Create: `src/services/github/types.ts`
 - Create: `src/services/github/client.ts`
 - Create: `test/mocks/github/data.ts`
@@ -82,6 +86,7 @@ The CLI currently supports Gmail, Calendar, and Slack. GitHub is listed as "comi
 - Create: `test/services/github/client.test.ts`
 
 **Approach:**
+
 - Types: `GitHubRepo`, `GitHubIssue`, `GitHubPullRequest`, `GitHubComment`, `GitHubNotification`, `GitHubSearchResult`
 - Client class with `TokenGetter` constructor, private `api()` method creating `new Octokit({ auth })` per call
 - Methods: `listRepos`, `getRepo`, `listIssues`, `getIssue`, `createIssue`, `commentOnIssue`, `closeIssue`, `listPullRequests`, `getPullRequest`, `commentOnPR`, `listNotifications`, `markNotificationRead`, `searchRepos`, `searchCode`, `searchIssues`
@@ -90,6 +95,7 @@ The CLI currently supports Gmail, Calendar, and Slack. GitHub is listed as "comi
 **Patterns to follow:** `src/services/slack/client.ts` (TokenGetter, per-call instance), `test/mocks/slack/` (MSW structure)
 
 **Test scenarios:**
+
 - Each client method calls the correct GitHub API endpoint
 - List methods return typed arrays
 - Create/comment methods return the created resource
@@ -108,9 +114,11 @@ The CLI currently supports Gmail, Calendar, and Slack. GitHub is listed as "comi
 **Dependencies:** Unit 2 (types)
 
 **Files:**
+
 - Create: `src/services/github/formatters.ts`
 
 **Approach:**
+
 - `formatRepoList`, `formatRepo`, `formatIssueList`, `formatIssue`, `formatPRList`, `formatPR`, `formatCommentList`, `formatNotificationList`, `formatSearchResults`
 - Use chalk for coloring (green for open, red for closed, yellow for draft PRs)
 
@@ -129,12 +137,14 @@ The CLI currently supports Gmail, Calendar, and Slack. GitHub is listed as "comi
 **Dependencies:** Unit 2
 
 **Files:**
+
 - Create: `src/commands/github/helpers.ts`
 - Create: `src/commands/github/index.ts`
 - Modify: `src/index.ts`
 - Create: `test/commands/github/helpers.test.ts`
 
 **Approach:**
+
 - `CONNECTION = 'github'`, `createGitHubClient(cmd)`, `handleGitHubError(err, cmd)`
 - Error mapping: 401 → EXIT_AUTH_REQUIRED, 403 → EXIT_AUTHZ_REQUIRED, 404 → EXIT_SERVICE_ERROR, network errors → EXIT_NETWORK_ERROR
 - `createGitHubCommand()` registers all subcommands
@@ -143,6 +153,7 @@ The CLI currently supports Gmail, Calendar, and Slack. GitHub is listed as "comi
 **Patterns to follow:** `src/commands/slack/helpers.ts`, `src/commands/slack/index.ts`
 
 **Test scenarios:**
+
 - `handleGitHubError` maps 401/403/404/network errors to correct exit codes
 - Exports createGitHubClient
 
@@ -159,10 +170,12 @@ The CLI currently supports Gmail, Calendar, and Slack. GitHub is listed as "comi
 **Dependencies:** Unit 4
 
 **Files:**
+
 - Create: `src/commands/github/repos.ts`
 - Create: `src/commands/github/repo.ts`
 
 **Approach:**
+
 - `repos` — list authenticated user's repos, flags: `--limit`, `--sort` (created/updated/pushed), `--type` (all/owner/member)
 - `repo <owner/repo>` — get repo details by full name
 
@@ -181,9 +194,11 @@ The CLI currently supports Gmail, Calendar, and Slack. GitHub is listed as "comi
 **Dependencies:** Unit 4
 
 **Files:**
+
 - Create: `src/commands/github/issues.ts`
 
 **Approach:**
+
 - `github issues <owner/repo>` — list issues, flags: `--state` (open/closed/all), `--limit`, `--labels`
 - `github issue <owner/repo> <number>` — get issue details
 - `github issue create <owner/repo>` — create issue (destructive), flags: `--title`, `--body`, `--labels`, `--assignees`
@@ -205,9 +220,11 @@ The CLI currently supports Gmail, Calendar, and Slack. GitHub is listed as "comi
 **Dependencies:** Unit 4
 
 **Files:**
+
 - Create: `src/commands/github/prs.ts`
 
 **Approach:**
+
 - `github prs <owner/repo>` — list PRs, flags: `--state` (open/closed/all), `--limit`
 - `github pr <owner/repo> <number>` — get PR details (includes diff stats, review status)
 - `github pr comment <owner/repo> <number>` — add comment (destructive), flags: `--body`
@@ -227,9 +244,11 @@ The CLI currently supports Gmail, Calendar, and Slack. GitHub is listed as "comi
 **Dependencies:** Unit 4
 
 **Files:**
+
 - Create: `src/commands/github/notifications.ts`
 
 **Approach:**
+
 - `github notifications` — list notifications, flags: `--all` (include read), `--limit`
 - `github notification read <id>` — mark notification as read (destructive)
 
@@ -248,9 +267,11 @@ The CLI currently supports Gmail, Calendar, and Slack. GitHub is listed as "comi
 **Dependencies:** Unit 4
 
 **Files:**
+
 - Create: `src/commands/github/search.ts`
 
 **Approach:**
+
 - `github search repos <query>` — search repositories, flags: `--limit`, `--sort` (stars/forks/updated)
 - `github search code <query>` — search code, flags: `--limit`
 - `github search issues <query>` — search issues/PRs, flags: `--limit`, `--sort` (created/updated/comments)
@@ -270,11 +291,13 @@ The CLI currently supports Gmail, Calendar, and Slack. GitHub is listed as "comi
 **Dependencies:** Units 5-9
 
 **Files:**
+
 - Modify: `README.md`
 - Modify: `skills/auth0-token-vault/SKILL.md`
 - Modify: `skills/auth0-token-vault/references/commands.md`
 
 **Approach:**
+
 - Add GitHub to Available Services (remove "coming soon!")
 - Add GitHub to Quick Start section
 - Add full GitHub command reference with flags and examples

@@ -94,15 +94,13 @@ export class SlackClient {
     });
 
     const msgData = res.messages as any;
-    const matches: SlackSearchMatch[] = (msgData?.matches ?? []).map(
-      (m: any) => ({
-        ts: m.ts,
-        channel: { id: m.channel?.id ?? '', name: m.channel?.name ?? '' },
-        user: m.user ?? m.username ?? '',
-        text: m.text ?? '',
-        permalink: m.permalink ?? '',
-      })
-    );
+    const matches: SlackSearchMatch[] = (msgData?.matches ?? []).map((m: any) => ({
+      ts: m.ts,
+      channel: { id: m.channel?.id ?? '', name: m.channel?.name ?? '' },
+      user: m.user ?? m.username ?? '',
+      text: m.text ?? '',
+      permalink: m.permalink ?? '',
+    }));
 
     return {
       matches,
@@ -114,10 +112,7 @@ export class SlackClient {
 
   // ── Post / Reply ─────────────────────────────────────────────
 
-  async postMessage(
-    channel: string,
-    text: string
-  ): Promise<{ ts: string; channel: string }> {
+  async postMessage(channel: string, text: string): Promise<{ ts: string; channel: string }> {
     const api = await this.api();
     const res = await api.chat.postMessage({ channel, text });
     return { ts: res.ts!, channel: res.channel! };

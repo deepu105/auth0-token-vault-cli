@@ -168,4 +168,3 @@ export function formatSearchIssueResults(result: GitHubSearchResult<GitHubIssue>
   if (result.items.length === 0) return chalk.yellow('No issues found.');
   return `${header}\n\n${formatIssueList(result.items)}`;
 }
-

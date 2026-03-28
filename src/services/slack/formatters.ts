@@ -1,11 +1,6 @@
 import chalk from 'chalk';
 import { truncate } from '../../utils/format-helpers.js';
-import type {
-  ChannelListResult,
-  MessageListResult,
-  SearchResult,
-  SlackUser,
-} from './types.js';
+import type { ChannelListResult, MessageListResult, SearchResult, SlackUser } from './types.js';
 
 export function formatChannelList(result: ChannelListResult): string {
   if (result.channels.length === 0) {
@@ -16,15 +11,12 @@ export function formatChannelList(result: ChannelListResult): string {
     const name = chalk.cyan(`#${ch.name}`);
     const priv = ch.isPrivate ? chalk.dim(' (private)') : '';
     const archived = ch.isArchived ? chalk.dim(' [archived]') : '';
-    const members =
-      ch.numMembers !== undefined ? chalk.dim(` (${ch.numMembers} members)`) : '';
+    const members = ch.numMembers !== undefined ? chalk.dim(` (${ch.numMembers} members)`) : '';
     const purpose = ch.purpose ? `\n   ${chalk.dim(truncate(ch.purpose, 60))}` : '';
     return `  ${name}${priv}${archived}${members}${purpose}`;
   });
 
-  const footer = result.nextCursor
-    ? chalk.dim('\nMore channels available.')
-    : '';
+  const footer = result.nextCursor ? chalk.dim('\nMore channels available.') : '';
 
   return `${lines.join('\n')}${footer}`;
 }
@@ -40,9 +32,7 @@ export function formatMessageList(result: MessageListResult): string {
     const text = truncate(m.text, 80);
     const ts = chalk.dim(formatTimestamp(m.ts));
     const thread =
-      m.replyCount !== undefined && m.replyCount > 0
-        ? chalk.dim(` (${m.replyCount} replies)`)
-        : '';
+      m.replyCount !== undefined && m.replyCount > 0 ? chalk.dim(` (${m.replyCount} replies)`) : '';
     const reactions = m.reactions?.length
       ? `\n   ${m.reactions.map((r) => `${r.name} (${r.count})`).join('  ')}`
       : '';
@@ -116,9 +106,11 @@ export function formatUserInfo(user: SlackUser): string {
   return lines.join('\n');
 }
 
-
 function formatTimestamp(ts: string): string {
   const seconds = parseFloat(ts);
   if (isNaN(seconds)) return ts;
-  return new Date(seconds * 1000).toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC');
+  return new Date(seconds * 1000)
+    .toISOString()
+    .replace('T', ' ')
+    .replace(/\.\d+Z$/, ' UTC');
 }

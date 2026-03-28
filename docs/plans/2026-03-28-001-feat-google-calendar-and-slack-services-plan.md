@@ -1,5 +1,5 @@
 ---
-title: "feat: Add Google Calendar and Slack services"
+title: 'feat: Add Google Calendar and Slack services'
 type: feat
 status: active
 date: 2026-03-28
@@ -49,7 +49,7 @@ The CLI currently only supports Gmail. The brainstorm doc (R21) designed the sub
 ## Key Technical Decisions
 
 - **Service registry 1:N mapping:** Google Calendar and Gmail share the `google-oauth2` Auth0 connection. The `CONNECTION_TO_SERVICE` reverse map must become `Map<string, string[]>` (one connection → multiple service names). The `getServiceForConnection()` function returns the first match but `getServicesForConnection()` (new, plural) returns all. The `connections` command uses the plural form to display all services for a connection.
-- **Google Calendar scopes:** `https://www.googleapis.com/auth/calendar` (full read/write) — a single scope covers list, create, update, delete. These are *additional* scopes on the same `google-oauth2` connection, so connecting calendar may prompt the user to re-authorize with broader Google scopes.
+- **Google Calendar scopes:** `https://www.googleapis.com/auth/calendar` (full read/write) — a single scope covers list, create, update, delete. These are _additional_ scopes on the same `google-oauth2` connection, so connecting calendar may prompt the user to re-authorize with broader Google scopes.
 - **Slack connection name:** `sign-in-with-slack` — this is the Auth0 social connection identifier for Slack (per Auth0 for AI Agents docs). Not `slack`.
 - **Slack scopes:** `channels:read`, `channels:history`, `groups:read`, `groups:history`, `chat:write`, `search:read`, `reactions:write`, `users:read`, `users.profile:write` — covers the planned command surface. `search:read` is user-token-only (not available with bot tokens), which aligns with the Auth0 Token Vault approach.
 - **Slack WebClient per-call pattern:** Unlike Gmail's `OAuth2Client.setCredentials()`, `WebClient` takes the token at construction. Create a new `WebClient(await this.getToken())` per method call (constructor is lightweight) to handle token refresh transparently.

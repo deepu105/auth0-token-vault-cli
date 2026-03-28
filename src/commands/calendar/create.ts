@@ -32,11 +32,7 @@ export function registerCreateCommand(calendar: Command) {
           attendees,
         });
 
-        output(
-          { data: event },
-          chalk.green(`Event created (id: ${event.id})`),
-          cmd
-        );
+        output({ data: event }, chalk.green(`Event created (id: ${event.id})`), cmd);
       } catch (err) {
         handleCalendarError(err, cmd);
       }

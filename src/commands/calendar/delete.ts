@@ -15,11 +15,7 @@ export function registerDeleteCommand(calendar: Command) {
         const client = await createCalendarClient(cmd);
         await client.deleteEvent(opts.calendar, eventId);
 
-        output(
-          { status: 'deleted', eventId },
-          chalk.green(`Event ${eventId} deleted.`),
-          cmd
-        );
+        output({ status: 'deleted', eventId }, chalk.green(`Event ${eventId} deleted.`), cmd);
       } catch (err) {
         handleCalendarError(err, cmd);
       }

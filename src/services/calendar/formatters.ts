@@ -86,4 +86,3 @@ function formatDateTimeRange(start: EventDateTime, end: EventDateTime): string {
   // For timed events, format nicely
   return `${startStr} → ${endStr}`;
 }
-

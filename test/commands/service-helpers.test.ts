@@ -243,7 +243,10 @@ describe('classifySlackError', () => {
 
 describe('classifyGitHubError', () => {
   it('classifies 401 as auth_required', () => {
-    const result = classifyGitHubError(Object.assign(new Error('Unauthorized'), { status: 401 }), 'github');
+    const result = classifyGitHubError(
+      Object.assign(new Error('Unauthorized'), { status: 401 }),
+      'github'
+    );
     expect(result).toEqual({
       code: 'auth_required',
       message: 'Github token expired. Run `auth0-tv connect github`.',
@@ -252,7 +255,10 @@ describe('classifyGitHubError', () => {
   });
 
   it('classifies 403 as authorization_required', () => {
-    const result = classifyGitHubError(Object.assign(new Error('Forbidden'), { status: 403 }), 'github');
+    const result = classifyGitHubError(
+      Object.assign(new Error('Forbidden'), { status: 403 }),
+      'github'
+    );
     expect(result).toEqual({
       code: 'authorization_required',
       message:

@@ -113,7 +113,9 @@ export class KeyringBackend implements CredentialBackend {
       const entries = await keytar.findCredentials(SERVICE_NAME);
       await Promise.all(
         entries
-          .filter((e) => e.account !== AUTH0_CONFIG_ACCOUNT && !e.account.startsWith(SETTINGS_PREFIX))
+          .filter(
+            (e) => e.account !== AUTH0_CONFIG_ACCOUNT && !e.account.startsWith(SETTINGS_PREFIX)
+          )
           .map((e) => keytar.deletePassword(SERVICE_NAME, e.account))
       );
       log('keyring credentials cleared');

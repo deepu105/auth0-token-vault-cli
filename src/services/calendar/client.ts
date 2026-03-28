@@ -157,12 +157,14 @@ function parseEventFull(data: any): EventFull {
   return {
     ...parseEventSummary(data),
     description: data.description ?? undefined,
-    attendees: (data.attendees ?? []).map((a: any): EventAttendee => ({
-      email: a.email ?? '',
-      displayName: a.displayName ?? undefined,
-      responseStatus: a.responseStatus ?? undefined,
-      optional: a.optional ?? undefined,
-    })),
+    attendees: (data.attendees ?? []).map(
+      (a: any): EventAttendee => ({
+        email: a.email ?? '',
+        displayName: a.displayName ?? undefined,
+        responseStatus: a.responseStatus ?? undefined,
+        optional: a.optional ?? undefined,
+      })
+    ),
     creator: {
       email: data.creator?.email ?? '',
       displayName: data.creator?.displayName ?? undefined,

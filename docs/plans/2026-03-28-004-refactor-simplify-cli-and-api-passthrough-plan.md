@@ -1,5 +1,5 @@
 ---
-title: "refactor: Simplify CLI via shared service infrastructure and API passthrough analysis"
+title: 'refactor: Simplify CLI via shared service infrastructure and API passthrough analysis'
 type: refactor
 status: completed
 date: 2026-03-28
@@ -46,14 +46,14 @@ Each new service requires ~4 boilerplate files (helpers.ts, index.ts, per-comman
 
 ### Duplication Inventory
 
-| Pattern | Copies | Impact |
-|---------|--------|--------|
-| Client factory (`createXxxClient`) | 4 | ~8 identical lines each, only connection string + class differ |
-| Error handler common skeleton | 4 | TokenExchangeError + network error + fallback = ~15 identical lines each |
-| Gmail/Calendar error handlers | 2 | Byte-for-byte identical except service name strings |
-| `truncate()` utility | 4 | Identical 3-line function in every `formatters.ts` |
-| Command action try/catch wrapper | ~25+ | Same 8-line pattern in every command file |
-| Connection string constants | 4 | Duplicate what `service-registry.ts` already knows |
+| Pattern                            | Copies | Impact                                                                   |
+| ---------------------------------- | ------ | ------------------------------------------------------------------------ |
+| Client factory (`createXxxClient`) | 4      | ~8 identical lines each, only connection string + class differ           |
+| Error handler common skeleton      | 4      | TokenExchangeError + network error + fallback = ~15 identical lines each |
+| Gmail/Calendar error handlers      | 2      | Byte-for-byte identical except service name strings                      |
+| `truncate()` utility               | 4      | Identical 3-line function in every `formatters.ts`                       |
+| Command action try/catch wrapper   | ~25+   | Same 8-line pattern in every command file                                |
+| Connection string constants        | 4      | Duplicate what `service-registry.ts` already knows                       |
 
 ## Key Technical Decisions
 
@@ -87,7 +87,7 @@ Each new service requires ~4 boilerplate files (helpers.ts, index.ts, per-comman
 
 ## High-Level Technical Design
 
-> *This illustrates the intended approach and is directional guidance for review, not implementation specification. The implementing agent should treat it as context, not code to reproduce.*
+> _This illustrates the intended approach and is directional guidance for review, not implementation specification. The implementing agent should treat it as context, not code to reproduce._
 
 ```
 BEFORE (per-service helpers.ts — 4 copies):
@@ -135,6 +135,7 @@ AFTER:
 **Dependencies:** None
 
 **Files:**
+
 - Create: `src/utils/format-helpers.ts`
 - Modify: `src/services/gmail/formatters.ts`
 - Modify: `src/services/calendar/formatters.ts`
@@ -143,20 +144,24 @@ AFTER:
 - Test: `test/utils/format-helpers.test.ts`
 
 **Approach:**
+
 - Move `truncate()` to new shared utility file
 - Replace local copies with imports in all 4 formatters
 - Add basic tests for truncation edge cases (empty string, exact length, over length)
 
 **Patterns to follow:**
+
 - Existing utilities in `src/utils/` (e.g., `output.ts`, `exit-codes.ts`)
 
 **Test scenarios:**
+
 - String shorter than max returns unchanged
 - String at exactly max length returns unchanged
 - String over max is truncated with ellipsis
 - Empty string returns empty
 
 **Verification:**
+
 - All 4 formatters import from `src/utils/format-helpers.ts`
 - No local `truncate()` functions remain in any formatter file
 - Existing formatter tests still pass
@@ -170,10 +175,12 @@ AFTER:
 **Dependencies:** None
 
 **Files:**
+
 - Create: `src/commands/service-helpers.ts`
 - Test: `test/commands/service-helpers.test.ts`
 
 **Approach:**
+
 - `createServiceClient<T>(ClientClass, serviceName, cmd)`: creates `CredentialStore`, calls `requireConfig`, looks up connection via `getConnectionForService(serviceName)`, returns `new ClientClass(tokenGetter)`
 - `handleServiceError(err, cmd, serviceName, classifyError?)`: handles TokenExchangeError (delegate to `err.exitCode`), network errors (ECONNREFUSED/fetch failed → EXIT_NETWORK_ERROR), then calls optional `classifyError(err)` for service-specific mapping, and falls back to EXIT_SERVICE_ERROR
 - Error classifier type: `(err: unknown) => { code: string; message: string; exitCode: number } | undefined` — returns undefined if the error isn't service-specific
@@ -181,10 +188,12 @@ AFTER:
 - Gmail and Calendar both use `classifyGoogleError` (they're currently identical except for the service name string, which now comes from the `serviceName` parameter)
 
 **Patterns to follow:**
+
 - `src/commands/shared-helpers.ts` — existing shared extraction pattern
 - `src/utils/service-registry.ts` — registry lookup pattern
 
 **Test scenarios:**
+
 - Generic factory creates client with correct token getter wired to the right connection
 - TokenExchangeError is handled with the error's own exit code
 - Network errors (ECONNREFUSED, fetch failed) map to EXIT_NETWORK_ERROR
@@ -195,6 +204,7 @@ AFTER:
 - `serviceName` is correctly interpolated into error messages (e.g., "Run `auth0-tv connect gmail`")
 
 **Verification:**
+
 - All error handling behaviors from the 4 existing handlers are covered by tests on the shared infrastructure
 - `classifyGoogleError` is used for both Gmail and Calendar
 
@@ -207,6 +217,7 @@ AFTER:
 **Dependencies:** Unit 2
 
 **Files:**
+
 - Modify: `src/commands/gmail/helpers.ts`
 - Modify: `src/commands/calendar/helpers.ts`
 - Modify: `src/commands/slack/helpers.ts`
@@ -217,6 +228,7 @@ AFTER:
 - Test: `test/commands/github/helpers.test.ts`
 
 **Approach:**
+
 - Each helpers file becomes a thin module that imports from `../service-helpers.ts` and re-exports bound versions:
   - `createGmailClient(cmd)` → `createServiceClient(GmailClient, 'gmail', cmd)`
   - `handleGmailError(err, cmd)` → `handleServiceError(err, cmd, 'gmail', classifyGoogleError)`
@@ -225,14 +237,17 @@ AFTER:
 - Existing per-service helper tests should continue to pass since the behavior is identical
 
 **Patterns to follow:**
+
 - Current re-export pattern in helpers.ts (`export { requireConfirmation } from '../shared-helpers.js'`)
 
 **Test scenarios:**
+
 - All existing helper tests pass without modification (or with minimal import adjustments)
 - Client factory produces correct client type for each service
 - Error handler produces correct exit codes for each service's error shapes
 
 **Verification:**
+
 - No command file import paths change
 - `npm run test` passes with no failures
 - Each per-service helpers.ts is under ~15 lines (down from ~70-100)
@@ -246,24 +261,29 @@ AFTER:
 **Dependencies:** Unit 2
 
 **Files:**
+
 - Modify: `src/commands/service-helpers.ts`
 - Test: `test/commands/service-helpers.test.ts`
 
 **Approach:**
+
 - Add `withServiceAction<T>(serviceName, ClientClass, classifyError?, action)` to service-helpers
 - The wrapper: creates client, calls the action callback with `(client, opts, cmd)`, catches errors with `handleServiceError`
 - Returns a function matching Commander's action signature
 - Command files can use it, but this unit only adds the wrapper — migration of commands is optional and can be done incrementally
 
 **Patterns to follow:**
+
 - Commander.js action handler signature: `(args..., opts, cmd) => Promise<void>`
 
 **Test scenarios:**
+
 - Wrapper calls action with a valid client instance
 - Wrapper catches errors and delegates to handleServiceError
 - Wrapper propagates the serviceName correctly
 
 **Verification:**
+
 - `withServiceAction` is exported and tested
 - At least one command file is updated as a proof-of-concept to validate the API ergonomics
 
@@ -276,11 +296,13 @@ AFTER:
 **Dependencies:** None (can be done in parallel with units 1-4)
 
 **Files:**
+
 - Create: `src/commands/token.ts`
 - Modify: `src/index.ts`
 - Test: `test/commands/token.test.ts`
 
 **Approach:**
+
 - New command: `auth0-tv token <service>` where service is any registered service name
 - Validates service name against `getAvailableServices()` from the service registry
 - Uses `requireConfig` + `exchangeForConnectionToken` to get a fresh token
@@ -290,10 +312,12 @@ AFTER:
 - Does NOT support `--scope` or custom connections — uses the registry's connection for the named service
 
 **Patterns to follow:**
+
 - `src/commands/connect.ts` — validates service name, uses credential store and token exchange
 - `src/commands/status.ts` — simple command registration pattern
 
 **Test scenarios:**
+
 - Valid service name returns a token (mock token exchange)
 - Invalid service name exits with EXIT_INVALID_INPUT and helpful message listing available services
 - Not logged in exits with EXIT_AUTH_REQUIRED
@@ -302,6 +326,7 @@ AFTER:
 - Token is written to stdout (not stderr) for shell capture compatibility
 
 **Verification:**
+
 - `auth0-tv token github` returns a usable token
 - `auth0-tv token --json github` returns structured JSON
 - `auth0-tv token nonexistent` exits with error listing available services
@@ -316,15 +341,18 @@ AFTER:
 **Dependencies:** Unit 5
 
 **Files:**
+
 - Modify: `skills/auth0-token-vault/references/commands.md`
 - Modify: `skills/auth0-token-vault/SKILL.md`
 
 **Approach:**
+
 - Add `token` command to the command reference with usage, options, and examples
 - Add a note in the skill overview explaining when agents should use `token` vs typed commands
 - Recommended pattern for agents: use typed commands for common operations (they have better error handling and human-readable output), use `token` when needing to perform an action not covered by existing commands
 
 **Verification:**
+
 - Command reference includes complete `token` command documentation
 - Skill manifest mentions `token` as an option for advanced/uncovered use cases
 

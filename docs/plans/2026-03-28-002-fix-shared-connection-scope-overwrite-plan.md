@@ -1,5 +1,5 @@
 ---
-title: "fix: Merge scopes for services sharing an Auth0 connection"
+title: 'fix: Merge scopes for services sharing an Auth0 connection'
 status: active
 type: fix
 origin: User report — connecting Calendar after Gmail (or vice versa) loses scopes for the first service
@@ -32,6 +32,7 @@ When connecting a service, build the scope set as follows:
 2. **Sibling services** (other services sharing the same connection that are already connected remotely): include only their **already-approved remote scopes** — preserve existing access without inflating consent
 
 This means:
+
 - `connect gmail` (first): sends Gmail's full registry scopes only
 - `connect calendar` (Gmail already connected): sends Calendar's full registry scopes + Gmail's already-approved remote scopes
 - `connect gmail` (Calendar already connected): sends Gmail's full registry scopes + Calendar's already-approved remote scopes
@@ -46,6 +47,7 @@ The `listConnectedAccounts` function already exists in `connected-accounts.ts` a
 - [ ] **Fetch existing remote scopes and merge with target service scopes**
 
 **Files:**
+
 - `src/commands/connect.ts`
 
 **Approach:**
@@ -79,6 +81,7 @@ Then pass `scopes` instead of `mapping.scopes` to `runConnectedAccountFlow`.
 **Patterns to follow:** The `connections` command already calls `listConnectedAccounts` — same pattern.
 
 **Test scenarios:**
+
 - Connect first service on a connection: no existing remote account → sends only target service's registry scopes
 - Connect second service on same connection: existing remote scopes found → sends target service's registry scopes + existing remote scopes (deduplicated)
 - Re-connect same service: existing remote scopes are a subset of registry scopes → result is just registry scopes (no inflation)
