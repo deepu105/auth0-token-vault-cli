@@ -25,13 +25,13 @@ export async function createServiceClient<T>(
   serviceName: string,
   _cmd: Command
 ): Promise<T> {
-  const store = new CredentialStore();
-  const config = await requireConfig(store);
   const connection = getConnectionForService(serviceName);
   if (!connection) {
     throw new Error(`Unknown service: ${serviceName}`);
   }
   return new ClientClass(async () => {
+    const store = new CredentialStore();
+    const config = await requireConfig(store);
     return exchangeForConnectionToken(config, store, connection);
   });
 }

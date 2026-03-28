@@ -7,11 +7,7 @@ import {
   parseOwnerRepo,
   requireConfirmation,
 } from './helpers.js';
-import {
-  formatIssueList,
-  formatIssue,
-  formatCommentList,
-} from '../../services/github/formatters.js';
+import { formatIssueList, formatIssue } from '../../services/github/formatters.js';
 import { EXIT_INVALID_INPUT } from '../../utils/exit-codes.js';
 
 export function registerIssuesCommand(github: Command) {

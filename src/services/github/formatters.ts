@@ -45,7 +45,7 @@ export function formatIssueList(issues: GitHubIssue[]): string {
       const state = i.state === 'open' ? chalk.green('open') : chalk.red('closed');
       const num = chalk.dim(`#${i.number}`);
       const labels = i.labels.length
-        ? ' ' + i.labels.map((l) => chalk.dim(`[${l.name}]`)).join(' ')
+        ? ` ${i.labels.map((l) => chalk.dim(`[${l.name}]`)).join(' ')}`
         : '';
       const comments = i.comments > 0 ? chalk.dim(` (${i.comments} comments)`) : '';
       return `  ${num} ${state}  ${i.title}${labels}${comments}`;
