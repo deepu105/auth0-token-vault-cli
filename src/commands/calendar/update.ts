@@ -2,7 +2,7 @@ import type { Command } from 'commander';
 import chalk from 'chalk';
 import { output } from '../../utils/output.js';
 import { splitCommaList } from '../../utils/format-helpers.js';
-import { createCalendarClient, handleCalendarError, requireConfirmation } from './helpers.js';
+import { withCalendarAction, requireConfirmation } from './helpers.js';
 import type { EventInput } from '../../services/calendar/types.js';
 
 export function registerUpdateCommand(calendar: Command) {
@@ -16,13 +16,10 @@ export function registerUpdateCommand(calendar: Command) {
     .option('--description <text>', 'Event description')
     .option('--attendees <emails>', 'Comma-separated attendee email addresses')
     .option('--calendar <id>', 'Calendar ID', 'primary')
-    .action(async (eventId: string, opts, cmd: Command) => {
-      try {
+    .action(
+      withCalendarAction(async (client, [eventId], opts, cmd) => {
         await requireConfirmation(`Update event ${eventId}`, cmd);
-
-        const client = await createCalendarClient(cmd);
         const patch: Partial<EventInput> = {};
-
         if (opts.summary) patch.summary = opts.summary;
         if (opts.start) patch.start = { dateTime: opts.start };
         if (opts.end) patch.end = { dateTime: opts.end };
@@ -31,12 +28,8 @@ export function registerUpdateCommand(calendar: Command) {
         if (opts.attendees) {
           patch.attendees = splitCommaList(opts.attendees);
         }
-
         const event = await client.updateEvent(opts.calendar, eventId, patch);
-
         output({ data: event }, chalk.green(`Event updated (id: ${event.id})`), cmd);
-      } catch (err) {
-        handleCalendarError(err, cmd);
-      }
-    });
+      })
+    );
 }

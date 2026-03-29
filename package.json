@@ -24,6 +24,7 @@
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest run",
+    "test:all": "npm run verify && npm run test:e2e",
     "test:e2e": "rm -rf dist && tsc && shx chmod +x dist/*.js && vitest run --config vitest.e2e.config.ts",
     "test:e2e:watch": "rm -rf dist && tsc && shx chmod +x dist/*.js && vitest --config vitest.e2e.config.ts",
     "test:watch": "vitest",

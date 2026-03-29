@@ -105,26 +105,32 @@ export function handleServiceError(
  * Higher-order wrapper that eliminates the repeated try/catch + createClient
  * + handleError boilerplate in command action functions.
  *
+ * Commander calls actions as `(positional1, positional2, ..., opts, cmd)`.
+ * The callback receives `(client, positionals, opts, cmd)` so positional
+ * args can be destructured: `async (client, [messageId], opts, cmd) => { ... }`.
+ *
  * Usage:
- *   .action(withServiceAction('gmail', GmailClient, classifyGoogleError, async (client, opts, cmd) => {
- *     const result = await client.search(query);
- *     output({ data: result }, formatResult(result), cmd);
- *   }))
+ *   .action(withServiceAction('gmail', GmailClient, classifyGoogleError,
+ *     async (client, [query], opts, cmd) => {
+ *       const result = await client.search(query);
+ *       output({ data: result }, formatResult(result), cmd);
+ *     }))
  */
 export function withServiceAction<T>(
   serviceName: string,
   ClientClass: new (tokenGetter: () => Promise<string>) => T,
   classifyError: ErrorClassifier | undefined,
-  action: (client: T, opts: Record<string, any>, cmd: Command) => Promise<void>
+  action: (client: T, positionals: any[], opts: Record<string, any>, cmd: Command) => Promise<void>
 ): (...args: any[]) => Promise<void> {
   return async (...args: any[]) => {
     // Commander passes (positionalArgs..., options, command)
     // The last arg is always the Command, second-to-last is options
     const cmd: Command = args[args.length - 1];
-    const opts = args[args.length - 2] ?? {};
+    const opts = args.length > 1 ? args[args.length - 2] : {};
+    const positionals = args.slice(0, -2);
     try {
       const client = await createServiceClient(ClientClass, serviceName, cmd);
-      await action(client, opts, cmd);
+      await action(client, positionals, opts, cmd);
     } catch (err) {
       handleServiceError(err, cmd, serviceName, classifyError);
     }

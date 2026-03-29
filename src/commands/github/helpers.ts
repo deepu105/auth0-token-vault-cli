@@ -8,7 +8,7 @@ import {
 } from '../../utils/exit-codes.js';
 import { capitalize } from '../../utils/format-helpers.js';
 import { outputError } from '../../utils/output.js';
-import { createServiceClient, handleServiceError } from '../service-helpers.js';
+import { createServiceClient, handleServiceError, withServiceAction } from '../service-helpers.js';
 
 export { requireConfirmation } from '../service-helpers.js';
 
@@ -18,6 +18,12 @@ export async function createGitHubClient(cmd: Command): Promise<GitHubClient> {
 
 export function handleGitHubError(err: unknown, cmd: Command): never {
   return handleServiceError(err, cmd, 'github', classifyGitHubError);
+}
+
+export function withGitHubAction(
+  action: (client: GitHubClient, positionals: any[], opts: any, cmd: Command) => Promise<void>
+) {
+  return withServiceAction('github', GitHubClient, classifyGitHubError, action);
 }
 
 /**

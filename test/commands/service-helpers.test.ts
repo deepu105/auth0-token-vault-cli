@@ -158,7 +158,7 @@ describe('classifyGoogleError', () => {
     });
   });
 
-  it('returns undefined for unrecognised errors', () => {
+  it('returns undefined for unrecognized errors', () => {
     expect(classifyGoogleError({ code: 500 }, 'gmail')).toBeUndefined();
     expect(classifyGoogleError(new Error('random'), 'gmail')).toBeUndefined();
   });
@@ -228,7 +228,7 @@ describe('classifySlackError', () => {
     expect(result?.exitCode).toBe(EXIT_AUTH_REQUIRED);
   });
 
-  it('returns undefined for unrecognised Slack errors', () => {
+  it('returns undefined for unrecognized Slack errors', () => {
     expect(classifySlackError({ data: { error: 'unknown_thing' } }, 'slack')).toBeUndefined();
   });
 
@@ -279,7 +279,7 @@ describe('classifyGitHubError', () => {
     });
   });
 
-  it('returns undefined for unrecognised status codes', () => {
+  it('returns undefined for unrecognized status codes', () => {
     expect(
       classifyGitHubError(Object.assign(new Error('Server Error'), { status: 500 }), 'github')
     ).toBeUndefined();
@@ -309,7 +309,15 @@ describe('withServiceAction', () => {
   }
 
   it('calls action with a valid client instance', async () => {
-    const actionFn = vi.fn(async () => {});
+    const actionFn =
+      vi.fn<
+        (
+          client: MockClient,
+          positionals: any[],
+          opts: Record<string, any>,
+          cmd: Command
+        ) => Promise<void>
+      >();
     const wrapped = withServiceAction('gmail', MockClient, undefined, actionFn);
 
     const cmd = new Command();
@@ -323,7 +331,15 @@ describe('withServiceAction', () => {
   });
 
   it('passes opts and cmd correctly to the action callback', async () => {
-    const actionFn = vi.fn(async () => {});
+    const actionFn =
+      vi.fn<
+        (
+          client: MockClient,
+          positionals: any[],
+          opts: Record<string, any>,
+          cmd: Command
+        ) => Promise<void>
+      >();
     const wrapped = withServiceAction('gmail', MockClient, undefined, actionFn);
 
     const cmd = new Command();
@@ -331,7 +347,7 @@ describe('withServiceAction', () => {
     await wrapped(opts, cmd);
 
     expect(actionFn).toHaveBeenCalledOnce();
-    const [, receivedOpts, receivedCmd] = actionFn.mock.calls[0];
+    const [, , receivedOpts, receivedCmd] = actionFn.mock.calls[0];
     expect(receivedOpts).toBe(opts);
     expect(receivedCmd).toBe(cmd);
   });

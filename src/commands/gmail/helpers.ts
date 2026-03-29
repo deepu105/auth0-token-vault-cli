@@ -3,7 +3,12 @@ import { GmailClient } from '../../services/gmail/client.js';
 import { EXIT_INVALID_INPUT } from '../../utils/exit-codes.js';
 import { outputError } from '../../utils/output.js';
 import { classifyGoogleError } from '../../utils/classify-google-error.js';
-import { createServiceClient, handleServiceError, resolveBody } from '../service-helpers.js';
+import {
+  createServiceClient,
+  handleServiceError,
+  resolveBody,
+  withServiceAction,
+} from '../service-helpers.js';
 
 // Re-export shared helpers so existing gmail command imports remain unchanged
 export { requireConfirmation, resolveBody } from '../service-helpers.js';
@@ -14,6 +19,12 @@ export async function createGmailClient(cmd: Command): Promise<GmailClient> {
 
 export function handleGmailError(err: unknown, cmd: Command): never {
   return handleServiceError(err, cmd, 'gmail', classifyGoogleError);
+}
+
+export function withGmailAction(
+  action: (client: GmailClient, positionals: any[], opts: any, cmd: Command) => Promise<void>
+) {
+  return withServiceAction('gmail', GmailClient, classifyGoogleError, action);
 }
 
 /**

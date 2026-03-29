@@ -6,7 +6,7 @@ import {
   EXIT_INVALID_INPUT,
 } from '../../utils/exit-codes.js';
 import { capitalize } from '../../utils/format-helpers.js';
-import { createServiceClient, handleServiceError } from '../service-helpers.js';
+import { createServiceClient, handleServiceError, withServiceAction } from '../service-helpers.js';
 
 export { requireConfirmation } from '../service-helpers.js';
 
@@ -16,6 +16,12 @@ export async function createSlackClient(cmd: Command): Promise<SlackClient> {
 
 export function handleSlackError(err: unknown, cmd: Command): never {
   return handleServiceError(err, cmd, 'slack', classifySlackError);
+}
+
+export function withSlackAction(
+  action: (client: SlackClient, positionals: any[], opts: any, cmd: Command) => Promise<void>
+) {
+  return withServiceAction('slack', SlackClient, classifySlackError, action);
 }
 
 /**

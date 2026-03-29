@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
 import { output } from '../../utils/output.js';
 import { formatEventList } from '../../services/calendar/formatters.js';
-import { createCalendarClient, handleCalendarError } from './helpers.js';
+import { withCalendarAction } from './helpers.js';
 
 export function registerEventsCommand(calendar: Command) {
   calendar
@@ -12,9 +12,8 @@ export function registerEventsCommand(calendar: Command) {
     .option('--query <text>', 'Free-text search query')
     .option('-n, --max-results <n>', 'Maximum events to return', '25')
     .option('--page-token <token>', 'Page token for pagination')
-    .action(async (calendarId: string | undefined, opts, cmd: Command) => {
-      try {
-        const client = await createCalendarClient(cmd);
+    .action(
+      withCalendarAction(async (client, [calendarId], opts, cmd) => {
         const result = await client.listEvents(calendarId ?? 'primary', {
           from: opts.from,
           to: opts.to,
@@ -23,8 +22,6 @@ export function registerEventsCommand(calendar: Command) {
           pageToken: opts.pageToken,
         });
         output({ data: result }, formatEventList(result), cmd);
-      } catch (err) {
-        handleCalendarError(err, cmd);
-      }
-    });
+      })
+    );
 }

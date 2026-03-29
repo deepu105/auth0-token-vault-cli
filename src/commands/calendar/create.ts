@@ -2,7 +2,7 @@ import type { Command } from 'commander';
 import chalk from 'chalk';
 import { output } from '../../utils/output.js';
 import { splitCommaList } from '../../utils/format-helpers.js';
-import { createCalendarClient, handleCalendarError, requireConfirmation } from './helpers.js';
+import { withCalendarAction, requireConfirmation } from './helpers.js';
 
 export function registerCreateCommand(calendar: Command) {
   calendar
@@ -15,14 +15,11 @@ export function registerCreateCommand(calendar: Command) {
     .option('--description <text>', 'Event description')
     .option('--attendees <emails>', 'Comma-separated attendee email addresses')
     .option('--calendar <id>', 'Calendar ID', 'primary')
-    .action(async (opts, cmd: Command) => {
-      try {
+    .action(
+      withCalendarAction(async (client, _args, opts, cmd) => {
         await requireConfirmation(`Create event "${opts.summary}"`, cmd);
-
-        const client = await createCalendarClient(cmd);
         const parts = splitCommaList(opts.attendees);
         const attendees = parts.length > 0 ? parts : undefined;
-
         const event = await client.createEvent(opts.calendar, {
           summary: opts.summary,
           start: { dateTime: opts.start },
@@ -31,10 +28,7 @@ export function registerCreateCommand(calendar: Command) {
           description: opts.description,
           attendees,
         });
-
         output({ data: event }, chalk.green(`Event created (id: ${event.id})`), cmd);
-      } catch (err) {
-        handleCalendarError(err, cmd);
-      }
-    });
+      })
+    );
 }
