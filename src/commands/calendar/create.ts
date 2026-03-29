@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import chalk from 'chalk';
 import { output } from '../../utils/output.js';
+import { splitCommaList } from '../../utils/format-helpers.js';
 import { createCalendarClient, handleCalendarError, requireConfirmation } from './helpers.js';
 
 export function registerCreateCommand(calendar: Command) {
@@ -19,9 +20,8 @@ export function registerCreateCommand(calendar: Command) {
         await requireConfirmation(`Create event "${opts.summary}"`, cmd);
 
         const client = await createCalendarClient(cmd);
-        const attendees = opts.attendees
-          ? opts.attendees.split(',').map((e: string) => e.trim())
-          : undefined;
+        const parts = splitCommaList(opts.attendees);
+        const attendees = parts.length > 0 ? parts : undefined;
 
         const event = await client.createEvent(opts.calendar, {
           summary: opts.summary,

@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import { output } from '../../utils/output.js';
 import { formatLabelList } from '../../services/gmail/formatters.js';
+import { splitCommaList } from '../../utils/format-helpers.js';
 import { createGmailClient, handleGmailError } from './helpers.js';
 
 export function registerLabelCommands(gmail: Command) {
@@ -25,8 +26,8 @@ export function registerLabelCommands(gmail: Command) {
     .option('--remove <labels>', 'Comma-separated label IDs to remove')
     .action(async (messageId: string, opts, cmd: Command) => {
       try {
-        const addIds = opts.add ? opts.add.split(',').map((s: string) => s.trim()) : [];
-        const removeIds = opts.remove ? opts.remove.split(',').map((s: string) => s.trim()) : [];
+        const addIds = splitCommaList(opts.add);
+        const removeIds = splitCommaList(opts.remove);
 
         const client = await createGmailClient(cmd);
         await client.modifyLabels(messageId, addIds, removeIds);

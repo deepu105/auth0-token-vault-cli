@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
 import { requireConfig } from '../utils/config.js';
 import { outputError } from '../utils/output.js';
-import { EXIT_SERVICE_ERROR, EXIT_NETWORK_ERROR } from '../utils/exit-codes.js';
+import { EXIT_SERVICE_ERROR, EXIT_NETWORK_ERROR, isNetworkError } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
 import { exchangeForConnectionToken, TokenExchangeError } from '../auth/token-exchange.js';
 import { getConnectionForService } from '../utils/service-registry.js';
@@ -78,7 +78,7 @@ export function handleServiceError(
   const message = err instanceof Error ? err.message : String(err);
 
   // 2. Network errors
-  if (message.includes('ECONNREFUSED') || message.includes('fetch failed')) {
+  if (isNetworkError(message)) {
     outputError({ code: 'network_error', message }, cmd);
     process.exit(EXIT_NETWORK_ERROR);
   }

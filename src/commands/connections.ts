@@ -12,6 +12,22 @@ function localTokenStatus(entry: { expiresAt: number } | null): 'valid' | 'expir
   return Date.now() >= entry.expiresAt - EXPIRY_BUFFER_MS ? 'expired' : 'valid';
 }
 
+function formatTokenStatus(status: string): string {
+  if (status === 'valid') return chalk.green('valid');
+  if (status === 'expired') return chalk.yellow('expired');
+  return chalk.dim('none');
+}
+
+function formatConnectionLine(e: {
+  service: string;
+  connection: string;
+  tokenStatus: string;
+  scopes: string[];
+}): string {
+  const scopes = e.scopes.length > 0 ? `\n    scopes: ${chalk.dim(e.scopes.join(', '))}` : '';
+  return `  ${chalk.cyan(e.service)} (${e.connection}) — local token: ${formatTokenStatus(e.tokenStatus)}${scopes}`;
+}
+
 export function registerConnectionsCommand(program: Command) {
   program
     .command('connections')
@@ -31,83 +47,63 @@ export function registerConnectionsCommand(program: Command) {
         logError('Failed to fetch remote connections, falling back to local', err);
       }
 
-      if (remoteAccounts) {
-        // Remote-first: show all remote accounts with local token status
-        if (remoteAccounts.length === 0) {
-          output(
-            { connections: [] },
-            chalk.yellow('No services connected. Use `auth0-tv connect <service>` to connect one.'),
-            cmd
-          );
-          return;
-        }
+      let entries: {
+        connection: string;
+        services: string[];
+        service: string;
+        scopes: string[];
+        tokenStatus: string;
+        remote: boolean;
+        id?: string;
+      }[];
+      let heading: string;
 
-        const entries = await Promise.all(
+      if (remoteAccounts) {
+        entries = await Promise.all(
           remoteAccounts.map(async (acct) => {
             const localEntry = await store.getConnectionEntry(acct.connection);
-            const status = localTokenStatus(localEntry);
+            const services = getServicesForConnection(acct.connection);
             return {
               connection: acct.connection,
-              services: getServicesForConnection(acct.connection),
-              service: getServicesForConnection(acct.connection).join(', ') || acct.connection,
+              services,
+              service: services.join(', ') || acct.connection,
               id: acct.id,
               scopes: acct.scopes,
-              tokenStatus: status,
+              tokenStatus: localTokenStatus(localEntry),
               remote: true,
             };
           })
         );
-
-        const humanLines = entries.map((e) => {
-          const tokenLabel =
-            e.tokenStatus === 'valid'
-              ? chalk.green('valid')
-              : e.tokenStatus === 'expired'
-                ? chalk.yellow('expired')
-                : chalk.dim('none');
-          return `  ${chalk.cyan(e.service)} (${e.connection}) — local token: ${tokenLabel}`;
-        });
-
-        output({ connections: entries }, `Connected services:\n${humanLines.join('\n')}`, cmd);
+        heading = 'Connected services:';
       } else {
-        // Fallback: local-only (not logged in or remote call failed)
         const connections = await store.listConnections();
-
-        if (connections.length === 0) {
-          output(
-            { connections: [] },
-            chalk.yellow('No services connected. Use `auth0-tv connect <service>` to connect one.'),
-            cmd
-          );
-          return;
-        }
-
-        const entries = await Promise.all(
+        entries = await Promise.all(
           connections.map(async (conn) => {
             const entry = await store.getConnectionEntry(conn);
-            const status = localTokenStatus(entry);
+            const services = getServicesForConnection(conn);
             return {
               connection: conn,
-              services: getServicesForConnection(conn),
-              service: getServicesForConnection(conn).join(', ') || conn,
+              services,
+              service: services.join(', ') || conn,
               scopes: entry?.scopes ?? [],
-              tokenStatus: status,
+              tokenStatus: localTokenStatus(entry),
               remote: false,
             };
           })
         );
+        heading = 'Connected services (local only):';
+      }
 
-        const humanLines = entries.map((e) => {
-          const tokenLabel =
-            e.tokenStatus === 'valid' ? chalk.green('valid') : chalk.yellow('expired');
-          return `  ${chalk.cyan(e.service)} (${e.connection}) — local token: ${tokenLabel}`;
-        });
-
+      if (entries.length === 0) {
         output(
-          { connections: entries },
-          `Connected services (local only):\n${humanLines.join('\n')}`,
+          { connections: [] },
+          chalk.yellow('No services connected. Use `auth0-tv connect <service>` to connect one.'),
           cmd
         );
+        return;
       }
+
+      const humanLines = entries.map(formatConnectionLine);
+      output({ connections: entries }, `${heading}\n${humanLines.join('\n')}`, cmd);
     });
 }

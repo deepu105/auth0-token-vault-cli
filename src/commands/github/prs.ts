@@ -1,13 +1,12 @@
 import type { Command } from 'commander';
-import { output, outputError } from '../../utils/output.js';
+import { output } from '../../utils/output.js';
 import {
   createGitHubClient,
   handleGitHubError,
-  parseOwnerRepo,
+  requireOwnerRepo,
   requireConfirmation,
 } from './helpers.js';
 import { formatPRList, formatPR } from '../../services/github/formatters.js';
-import { EXIT_INVALID_INPUT } from '../../utils/exit-codes.js';
 
 export function registerPRsCommand(github: Command) {
   github
@@ -16,19 +15,7 @@ export function registerPRsCommand(github: Command) {
     .option('--state <state>', 'Filter by state (open/closed/all)', 'open')
     .option('-n, --limit <n>', 'Maximum pull requests to return', '30')
     .action(async (ownerRepo: string, opts, cmd: Command) => {
-      const parsed = parseOwnerRepo(ownerRepo);
-      if (!parsed) {
-        outputError(
-          {
-            code: 'invalid_input',
-            message: 'Invalid format. Expected owner/repo.',
-          },
-          cmd
-        );
-        process.exit(EXIT_INVALID_INPUT);
-      }
-
-      const { owner, repo } = parsed;
+      const { owner, repo } = requireOwnerRepo(ownerRepo, cmd);
 
       try {
         const client = await createGitHubClient(cmd);
@@ -49,19 +36,7 @@ export function registerPRCommand(github: Command) {
   pr.command('get <ownerRepo> <number>')
     .description('Get details of a pull request')
     .action(async (ownerRepo: string, number: string, _opts, cmd: Command) => {
-      const parsed = parseOwnerRepo(ownerRepo);
-      if (!parsed) {
-        outputError(
-          {
-            code: 'invalid_input',
-            message: 'Invalid format. Expected owner/repo.',
-          },
-          cmd
-        );
-        process.exit(EXIT_INVALID_INPUT);
-      }
-
-      const { owner, repo } = parsed;
+      const { owner, repo } = requireOwnerRepo(ownerRepo, cmd);
 
       try {
         const client = await createGitHubClient(cmd);
@@ -76,19 +51,7 @@ export function registerPRCommand(github: Command) {
     .description('Add a comment to a pull request')
     .requiredOption('--body <text>', 'Comment body text')
     .action(async (ownerRepo: string, number: string, opts, cmd: Command) => {
-      const parsed = parseOwnerRepo(ownerRepo);
-      if (!parsed) {
-        outputError(
-          {
-            code: 'invalid_input',
-            message: 'Invalid format. Expected owner/repo.',
-          },
-          cmd
-        );
-        process.exit(EXIT_INVALID_INPUT);
-      }
-
-      const { owner, repo } = parsed;
+      const { owner, repo } = requireOwnerRepo(ownerRepo, cmd);
 
       try {
         await requireConfirmation('comment on PR', cmd);

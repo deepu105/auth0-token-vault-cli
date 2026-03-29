@@ -1,14 +1,14 @@
 import type { Command } from 'commander';
 import chalk from 'chalk';
-import { output, outputError } from '../../utils/output.js';
+import { output } from '../../utils/output.js';
 import {
   createGitHubClient,
   handleGitHubError,
-  parseOwnerRepo,
+  requireOwnerRepo,
   requireConfirmation,
 } from './helpers.js';
 import { formatIssueList, formatIssue } from '../../services/github/formatters.js';
-import { EXIT_INVALID_INPUT } from '../../utils/exit-codes.js';
+import { splitCommaList } from '../../utils/format-helpers.js';
 
 export function registerIssuesCommand(github: Command) {
   github
@@ -18,19 +18,7 @@ export function registerIssuesCommand(github: Command) {
     .option('-n, --limit <n>', 'Maximum issues to return', '30')
     .option('--labels <labels>', 'Comma-separated label filter')
     .action(async (ownerRepo: string, opts, cmd: Command) => {
-      const parsed = parseOwnerRepo(ownerRepo);
-      if (!parsed) {
-        outputError(
-          {
-            code: 'invalid_input',
-            message: 'Invalid format. Expected owner/repo.',
-          },
-          cmd
-        );
-        process.exit(EXIT_INVALID_INPUT);
-      }
-
-      const { owner, repo } = parsed;
+      const { owner, repo } = requireOwnerRepo(ownerRepo, cmd);
 
       try {
         const client = await createGitHubClient(cmd);
@@ -54,19 +42,7 @@ export function registerIssueCommand(github: Command) {
     .command('get <ownerRepo> <number>')
     .description('Get details of a GitHub issue')
     .action(async (ownerRepo: string, number: string, _opts, cmd: Command) => {
-      const parsed = parseOwnerRepo(ownerRepo);
-      if (!parsed) {
-        outputError(
-          {
-            code: 'invalid_input',
-            message: 'Invalid format. Expected owner/repo.',
-          },
-          cmd
-        );
-        process.exit(EXIT_INVALID_INPUT);
-      }
-
-      const { owner, repo } = parsed;
+      const { owner, repo } = requireOwnerRepo(ownerRepo, cmd);
 
       try {
         const client = await createGitHubClient(cmd);
@@ -86,30 +62,14 @@ export function registerIssueCommand(github: Command) {
     .option('--labels <labels>', 'Comma-separated labels')
     .option('--assignees <assignees>', 'Comma-separated assignees')
     .action(async (ownerRepo: string, opts, cmd: Command) => {
-      const parsed = parseOwnerRepo(ownerRepo);
-      if (!parsed) {
-        outputError(
-          {
-            code: 'invalid_input',
-            message: 'Invalid format. Expected owner/repo.',
-          },
-          cmd
-        );
-        process.exit(EXIT_INVALID_INPUT);
-      }
-
-      const { owner, repo } = parsed;
+      const { owner, repo } = requireOwnerRepo(ownerRepo, cmd);
 
       try {
         await requireConfirmation('create issue', cmd);
 
         const client = await createGitHubClient(cmd);
-        const labels = opts.labels
-          ? opts.labels.split(',').map((l: string) => l.trim())
-          : undefined;
-        const assignees = opts.assignees
-          ? opts.assignees.split(',').map((a: string) => a.trim())
-          : undefined;
+        const labels = splitCommaList(opts.labels) || undefined;
+        const assignees = splitCommaList(opts.assignees) || undefined;
 
         const created = await client.createIssue(owner, repo, {
           title: opts.title,
@@ -134,19 +94,7 @@ export function registerIssueCommand(github: Command) {
     .description('Add a comment to a GitHub issue')
     .requiredOption('--body <body>', 'Comment body')
     .action(async (ownerRepo: string, number: string, opts, cmd: Command) => {
-      const parsed = parseOwnerRepo(ownerRepo);
-      if (!parsed) {
-        outputError(
-          {
-            code: 'invalid_input',
-            message: 'Invalid format. Expected owner/repo.',
-          },
-          cmd
-        );
-        process.exit(EXIT_INVALID_INPUT);
-      }
-
-      const { owner, repo } = parsed;
+      const { owner, repo } = requireOwnerRepo(ownerRepo, cmd);
 
       try {
         await requireConfirmation('comment on issue', cmd);
@@ -165,19 +113,7 @@ export function registerIssueCommand(github: Command) {
     .command('close <ownerRepo> <number>')
     .description('Close a GitHub issue')
     .action(async (ownerRepo: string, number: string, _opts, cmd: Command) => {
-      const parsed = parseOwnerRepo(ownerRepo);
-      if (!parsed) {
-        outputError(
-          {
-            code: 'invalid_input',
-            message: 'Invalid format. Expected owner/repo.',
-          },
-          cmd
-        );
-        process.exit(EXIT_INVALID_INPUT);
-      }
-
-      const { owner, repo } = parsed;
+      const { owner, repo } = requireOwnerRepo(ownerRepo, cmd);
 
       try {
         await requireConfirmation('close issue', cmd);

@@ -3,9 +3,11 @@ import { GitHubClient } from '../../services/github/client.js';
 import {
   EXIT_AUTH_REQUIRED,
   EXIT_AUTHZ_REQUIRED,
+  EXIT_INVALID_INPUT,
   EXIT_SERVICE_ERROR,
 } from '../../utils/exit-codes.js';
 import { capitalize } from '../../utils/format-helpers.js';
+import { outputError } from '../../utils/output.js';
 import { createServiceClient, handleServiceError } from '../service-helpers.js';
 
 export { requireConfirmation } from '../service-helpers.js';
@@ -26,6 +28,18 @@ export function parseOwnerRepo(ownerRepo: string): { owner: string; repo: string
   const parts = ownerRepo.split('/');
   if (parts.length !== 2 || !parts[0] || !parts[1]) return undefined;
   return { owner: parts[0], repo: parts[1] };
+}
+
+/**
+ * Parse and validate an "owner/repo" argument, exiting with an error if invalid.
+ */
+export function requireOwnerRepo(ownerRepo: string, cmd: Command): { owner: string; repo: string } {
+  const parsed = parseOwnerRepo(ownerRepo);
+  if (!parsed) {
+    outputError({ code: 'invalid_input', message: 'Invalid format. Expected owner/repo.' }, cmd);
+    process.exit(EXIT_INVALID_INPUT);
+  }
+  return parsed;
 }
 
 /** Classify GitHub API errors. */

@@ -1,8 +1,7 @@
 import type { Command } from 'commander';
-import { output, outputError } from '../../utils/output.js';
-import { createGitHubClient, handleGitHubError, parseOwnerRepo } from './helpers.js';
+import { output } from '../../utils/output.js';
+import { createGitHubClient, handleGitHubError, requireOwnerRepo } from './helpers.js';
 import { formatRepoList, formatRepo } from '../../services/github/formatters.js';
-import { EXIT_INVALID_INPUT } from '../../utils/exit-codes.js';
 
 export function registerReposCommand(github: Command) {
   github
@@ -31,19 +30,7 @@ export function registerRepoCommand(github: Command) {
     .command('repo <owner/repo>')
     .description('Get details of a GitHub repository')
     .action(async (ownerRepo: string, _opts, cmd: Command) => {
-      const parsed = parseOwnerRepo(ownerRepo);
-      if (!parsed) {
-        outputError(
-          {
-            code: 'invalid_input',
-            message: 'Invalid format. Expected owner/repo.',
-          },
-          cmd
-        );
-        process.exit(EXIT_INVALID_INPUT);
-      }
-
-      const { owner, repo } = parsed;
+      const { owner, repo } = requireOwnerRepo(ownerRepo, cmd);
 
       try {
         const client = await createGitHubClient(cmd);

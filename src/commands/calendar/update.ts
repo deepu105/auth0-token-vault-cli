@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import chalk from 'chalk';
 import { output } from '../../utils/output.js';
+import { splitCommaList } from '../../utils/format-helpers.js';
 import { createCalendarClient, handleCalendarError, requireConfirmation } from './helpers.js';
 import type { EventInput } from '../../services/calendar/types.js';
 
@@ -28,7 +29,7 @@ export function registerUpdateCommand(calendar: Command) {
         if (opts.location) patch.location = opts.location;
         if (opts.description) patch.description = opts.description;
         if (opts.attendees) {
-          patch.attendees = opts.attendees.split(',').map((e: string) => e.trim());
+          patch.attendees = splitCommaList(opts.attendees);
         }
 
         const event = await client.updateEvent(opts.calendar, eventId, patch);

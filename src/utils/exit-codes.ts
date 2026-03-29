@@ -15,3 +15,8 @@ export const EXIT_SERVICE_ERROR = 5;
 
 /** Network error (unreachable host, timeout) */
 export const EXIT_NETWORK_ERROR = 6;
+
+/** Check if an error message indicates a network-level failure. */
+export function isNetworkError(message: string): boolean {
+  return message.includes('ECONNREFUSED') || message.includes('fetch failed');
+}

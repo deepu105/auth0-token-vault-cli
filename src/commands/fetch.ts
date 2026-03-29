@@ -6,6 +6,7 @@ import {
   EXIT_INVALID_INPUT,
   EXIT_NETWORK_ERROR,
   EXIT_SERVICE_ERROR,
+  isNetworkError,
 } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
 import { exchangeForConnectionToken, TokenExchangeError } from '../auth/token-exchange.js';
@@ -191,7 +192,7 @@ export function registerFetchCommand(program: Command) {
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        if (message.includes('ECONNREFUSED') || message.includes('fetch failed')) {
+        if (isNetworkError(message)) {
           outputError({ code: 'network_error', message }, cmd);
           process.exit(EXIT_NETWORK_ERROR);
         }

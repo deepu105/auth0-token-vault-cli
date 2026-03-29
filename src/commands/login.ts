@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { resolveBrowser, resolveCallbackPort } from '../utils/config.js';
 import { resolveConfigWithPrompts } from '../utils/prompt.js';
 import { output, outputError } from '../utils/output.js';
-import { EXIT_GENERAL, EXIT_NETWORK_ERROR } from '../utils/exit-codes.js';
+import { EXIT_GENERAL, EXIT_NETWORK_ERROR, isNetworkError } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
 import { runPkceFlow } from '../auth/pkce-flow.js';
 
@@ -56,7 +56,7 @@ export function registerLoginCommand(program: Command) {
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
 
-        if (message.includes('ECONNREFUSED') || message.includes('fetch failed')) {
+        if (isNetworkError(message)) {
           outputError({ code: 'network_error', message }, cmd);
           process.exit(EXIT_NETWORK_ERROR);
         }
