@@ -7,12 +7,12 @@ description: >
   manage GitHub repos/issues/PRs/notifications, make authenticated API calls to
   third-party services, connect or disconnect external services, or check their
   authentication and connection status. Wraps the auth0-tv CLI.
-compatibility: Requires Node.js 18+ and auth0-tv installed globally (npm i -g auth0-token-vault-cli)
+compatibility: Requires Node.js 20+ and auth0-tv installed globally (npm i -g auth0-token-vault-cli)
 license: MIT
 allowed-tools: Bash(auth0-tv *)
 metadata:
   author: auth0
-  version: '0.1'
+  version: '0.2'
   openclaw:
     emoji: "\U0001F510"
     requires:

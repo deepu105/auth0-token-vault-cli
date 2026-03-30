@@ -126,11 +126,6 @@ The CLI is designed as a skill for [AgentSkills-compatible](https://agentskills.
 
 The CLI ships with an [Agent Skills](https://agentskills.io) manifest that enables automatic discovery in supported agent frameworks.
 
-**In-project discovery (automatic):** When working in this repo, agents discover the skill automatically:
-
-- **OpenClaw:** via `skills/auth0-token-vault/SKILL.md`
-- **Claude Code:** via `.claude/skills/auth0-token-vault/SKILL.md` (symlink)
-
 **Claude Code plugin marketplace:** Install the skill directly in Claude Code:
 
 ```
@@ -141,6 +136,12 @@ Then browse and install:
 
 ```
 /plugin install auth0-token-vault@auth0-token-vault
+```
+
+**ClawHub (OpenClaw skill registry):** Install the skill via [ClawHub](https://clawhub.ai):
+
+```bash
+npx clawhub@latest install auth0-token-vault
 ```
 
 **Global installation (manual):** For use outside this repo, install `auth0-tv` globally and copy the skill:
@@ -156,6 +157,11 @@ cp -r skills/auth0-token-vault ~/.openclaw/skills/
 ```
 
 > **Note:** Global `npm install -g` is required for agent use. Agents cannot discover `auth0-tv` when run via `npx` or from a local `node_modules/` install.
+
+**In-project discovery (automatic):** When working in this repo, agents discover the skill automatically:
+
+- **OpenClaw:** via `skills/auth0-token-vault/SKILL.md`
+- **Claude Code:** via `.claude/skills/auth0-token-vault/SKILL.md` (symlink)
 
 ## Configuration
 
@@ -384,6 +390,16 @@ For `minor` or `major` releases, replace `patch` with the appropriate semver bum
 - run `npm run release:check`
 - publish to npm with provenance
 - create the GitHub release notes automatically
+
+After the npm release, publish the updated skill to [ClawHub](https://clawhub.ai):
+
+```bash
+clawhub publish ./skills/auth0-token-vault \
+  --slug auth0-token-vault \
+  --version <new-version> \
+  --tags latest \
+  --changelog "<changelog>"
+```
 
 ## Credential Storage
 
