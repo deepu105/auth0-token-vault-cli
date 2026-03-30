@@ -1,0 +1,20 @@
+{
+  "name": "auth0-token-vault",
+  "owner": {
+    "name": "Auth0",
+    "email": "d4udts@gmail.com"
+  },
+  "metadata": {
+    "description": "Access third-party services (Gmail, Slack, Google Calendar, GitHub) on behalf of authenticated users via Auth0 Token Vault",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "auth0-token-vault",
+      "description": "Access third-party services (Gmail, Slack, Google Calendar, GitHub) on behalf of authenticated users via Auth0 Token Vault. Use when the user wants to search, read, send, or manage emails, manage calendar events, interact with Slack, manage GitHub repos/issues/PRs/notifications, make authenticated API calls to third-party services, connect or disconnect external services, or check their authentication and connection status. Wraps the auth0-tv CLI.",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/auth0-token-vault"]
+    }
+  ]
+}

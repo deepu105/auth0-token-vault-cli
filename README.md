@@ -131,7 +131,19 @@ The CLI ships with an [Agent Skills](https://agentskills.io) manifest that enabl
 - **OpenClaw:** via `skills/auth0-token-vault/SKILL.md`
 - **Claude Code:** via `.claude/skills/auth0-token-vault/SKILL.md` (symlink)
 
-**Global installation:** For use outside this repo, install `auth0-tv` globally and copy the skill:
+**Claude Code plugin marketplace:** Install the skill directly in Claude Code:
+
+```
+/plugin marketplace add deepu105/auth0-token-vault-cli
+```
+
+Then browse and install:
+
+```
+/plugin install auth0-token-vault@auth0-token-vault
+```
+
+**Global installation (manual):** For use outside this repo, install `auth0-tv` globally and copy the skill:
 
 ```bash
 npm install -g auth0-token-vault-cli
