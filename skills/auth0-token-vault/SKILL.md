@@ -12,7 +12,7 @@ license: MIT
 allowed-tools: Bash(auth0-tv *)
 metadata:
   author: auth0
-  version: '0.2'
+  version: '0.3'
   openclaw:
     emoji: "\U0001F510"
     requires:
