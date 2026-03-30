@@ -385,9 +385,7 @@ MIT
 
 - [ ] Demo video
 - [ ] Add more services (Google Drive, Google Contacts, Google Tasks, etc.)
-- [ ] Show scopes/grants in `auth0-tv connections` output
-- [ ] Use access_token instead of refresh token. Configurable
-- [x] API pass-through via `auth0-tv fetch <service> <url>` with domain allowlisting
+- [ ] Use access_token instead of refresh token. Configurable?
 - [ ] Refresh token expiry relies on error handling and re-authentication
 - [ ] MCP wrapper?
 - [ ] keytar replacement? Maybe with @napi-rs/keyring
