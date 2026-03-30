@@ -256,3 +256,110 @@ describe('connect scope merging', () => {
     expect(scopes).not.toContain('search:read');
   });
 });
+
+describe('connect --scopes flag', () => {
+  it('merges extra scopes with service default scopes', () => {
+    const gmailMapping = getServiceEntry('gmail')!;
+    const extraScopes =
+      'https://www.googleapis.com/auth/gmail.labels,https://www.googleapis.com/auth/gmail.settings.basic';
+    const parsed = extraScopes
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const scopes = [...new Set([...gmailMapping.scopes, ...parsed])];
+
+    expect(scopes).toContain('https://www.googleapis.com/auth/gmail.modify');
+    expect(scopes).toContain('https://www.googleapis.com/auth/gmail.labels');
+    expect(scopes).toContain('https://www.googleapis.com/auth/gmail.settings.basic');
+  });
+
+  it('deduplicates extra scopes that overlap with service defaults', () => {
+    const gmailMapping = getServiceEntry('gmail')!;
+    const extraScopes =
+      'https://www.googleapis.com/auth/gmail.modify,https://www.googleapis.com/auth/gmail.labels';
+    const parsed = extraScopes
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const scopes = [...new Set([...gmailMapping.scopes, ...parsed])];
+
+    // gmail.modify should appear only once
+    expect(scopes.filter((s) => s === 'https://www.googleapis.com/auth/gmail.modify')).toHaveLength(
+      1
+    );
+    expect(scopes).toContain('https://www.googleapis.com/auth/gmail.labels');
+  });
+
+  it('handles empty --scopes gracefully', () => {
+    const gmailMapping = getServiceEntry('gmail')!;
+    const extraScopes = '';
+    const parsed = extraScopes
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const scopes = [...new Set([...gmailMapping.scopes, ...parsed])];
+
+    expect(scopes).toEqual(gmailMapping.scopes);
+  });
+
+  it('trims whitespace from comma-separated scopes', () => {
+    const gmailMapping = getServiceEntry('gmail')!;
+    const extraScopes =
+      ' https://www.googleapis.com/auth/gmail.labels , https://www.googleapis.com/auth/gmail.settings.basic ';
+    const parsed = extraScopes
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const scopes = [...new Set([...gmailMapping.scopes, ...parsed])];
+
+    expect(scopes).toContain('https://www.googleapis.com/auth/gmail.labels');
+    expect(scopes).toContain('https://www.googleapis.com/auth/gmail.settings.basic');
+  });
+
+  it('merges extra scopes with both service defaults and remote scopes', async () => {
+    const msw = setupServer(...handlers);
+    msw.listen({ onUnhandledRequest: 'bypass' });
+
+    msw.use(
+      http.get('https://test.auth0.com/me/v1/connected-accounts/accounts', () =>
+        HttpResponse.json({
+          accounts: [
+            {
+              id: 'ca_abc123',
+              connection: 'google-oauth2',
+              scopes: ['https://www.googleapis.com/auth/gmail.modify'],
+            },
+          ],
+        })
+      )
+    );
+
+    const calendarMapping = getServiceEntry('calendar')!;
+    const extraScopes = 'https://www.googleapis.com/auth/calendar.settings.readonly';
+    const parsed = extraScopes
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    // Step 1: merge service defaults + extra scopes
+    let scopes = [...new Set([...calendarMapping.scopes, ...parsed])];
+
+    // Step 2: merge with remote scopes
+    const remoteAccounts = await listConnectedAccounts(config, 'valid-refresh-token');
+    const existing = remoteAccounts.find((a) => a.connection === calendarMapping.connection);
+    if (existing?.scopes.length) {
+      scopes = [...new Set([...scopes, ...existing.scopes])];
+    }
+
+    expect(scopes).toContain('https://www.googleapis.com/auth/calendar.readonly');
+    expect(scopes).toContain('https://www.googleapis.com/auth/calendar.events');
+    expect(scopes).toContain('https://www.googleapis.com/auth/calendar.settings.readonly');
+    expect(scopes).toContain('https://www.googleapis.com/auth/gmail.modify');
+
+    msw.close();
+  });
+});

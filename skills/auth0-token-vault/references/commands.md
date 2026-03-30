@@ -69,13 +69,17 @@ Connect a third-party service. **Requires human interaction** (opens browser for
 auth0-tv connect gmail
 auth0-tv --port 18486 connect gmail
 auth0-tv connect github --allowed-domains "api.github.com,ghcr.io"
+auth0-tv connect gmail --scopes "https://www.googleapis.com/auth/gmail.labels"
 ```
 
-| Flag                       | Description                                                     |
-| -------------------------- | --------------------------------------------------------------- |
-| `--allowed-domains <list>` | Comma-separated domains allowed for `auth0-tv fetch` (additive) |
+| Flag                       | Description                                                                  |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| `--allowed-domains <list>` | Comma-separated domains allowed for `auth0-tv fetch` (additive)              |
+| `--scopes <list>`          | Comma-separated extra scopes to request (merged with service default scopes) |
 
 Each service has default allowed domains built in. Use `--allowed-domains` only to add extra domains beyond the defaults.
+
+Use `--scopes` to request additional OAuth scopes beyond the service defaults (e.g. for API endpoints not covered by the built-in scope set). Extra scopes are merged and deduplicated with the service's default scopes and any existing remote scopes.
 
 ### disconnect
 

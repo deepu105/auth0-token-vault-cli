@@ -17,6 +17,10 @@ export function registerConnectCommand(program: Command) {
       '--allowed-domains <domains>',
       'Comma-separated domains allowed for `auth0-tv fetch` (e.g. api.github.com,api.slack.com)'
     )
+    .option(
+      '--scopes <scopes>',
+      'Comma-separated extra scopes to request (merged with service defaults)'
+    )
     .action(async (service: string, opts, cmd: Command) => {
       const serviceLower = service.toLowerCase();
       const mapping = getServiceEntry(serviceLower);
@@ -50,8 +54,15 @@ export function registerConnectCommand(program: Command) {
         await store.removeConnection(mapping.connection);
 
         // Build scopes: always include full registry scopes for the target service,
-        // plus any already-approved remote scopes (from sibling services on the same connection).
-        let scopes = [...mapping.scopes];
+        // plus any already-approved remote scopes (from sibling services on the same connection),
+        // plus any extra scopes provided via --scopes.
+        const extraScopes = opts.scopes
+          ? opts.scopes
+              .split(',')
+              .map((s: string) => s.trim())
+              .filter(Boolean)
+          : [];
+        let scopes = [...new Set([...mapping.scopes, ...extraScopes])];
         try {
           const remoteAccounts = await listConnectedAccounts(config, auth0Tokens.refreshToken);
           const existing = remoteAccounts.find((a) => a.connection === mapping.connection);
