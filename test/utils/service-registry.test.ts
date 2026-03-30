@@ -30,7 +30,7 @@ describe('service-registry', () => {
     expect(entry).toBeDefined();
     expect(entry!.connection).toBe('sign-in-with-slack');
     expect(entry!.scopes).toContain('chat:write');
-    expect(entry!.scopes).toContain('search:read');
+    expect(entry!.scopes).toContain('search:read.public');
   });
 
   it('getServiceEntry returns github entry', () => {
