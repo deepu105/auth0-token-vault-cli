@@ -26,7 +26,6 @@ jobs:
         run: |
           git fetch origin main
           git merge-base --is-ancestor "$GITHUB_SHA" "origin/main"
-      - run: npm run test:e2e
       - run: npm run release:check
       - name: Publish to npm with Trusted Publishing
         run: npm run release:publish

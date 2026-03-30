@@ -20,7 +20,7 @@
     "build": "rm -rf dist && tsc",
     "postbuild": "shx chmod +x dist/*.js",
     "release:check": "npm run test:all && npm run build",
-    "release:publish": "npm publish --provenance",
+    "release:publish": "npm publish",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest run",
