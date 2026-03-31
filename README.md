@@ -2,6 +2,8 @@
 
 Access third-party [services](https://auth0.com/ai/docs/integrations/overview) (Gmail, Slack, etc.) on behalf of authenticated users via [Auth0 Token Vault](https://auth0.com/ai/docs/intro/token-vault). Designed for both humans and AI agents.
 
+For a lightweight and flexible proxy instead of this CLI, use [Auth0 Token Vault Proxy](https://github.com/deepu105/token-vault-proxy)
+
 ## Available Services
 
 - [Gmail](https://auth0.com/ai/docs/integrations/google)
