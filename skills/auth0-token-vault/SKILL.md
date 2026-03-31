@@ -11,7 +11,7 @@ compatibility: Requires Node.js 20+ and auth0-tv installed globally (npm i -g au
 license: MIT
 allowed-tools: Bash(auth0-tv *)
 metadata:
-  author: auth0
+  author: deepu105
   version: '0.3'
   openclaw:
     emoji: "\U0001F510"
