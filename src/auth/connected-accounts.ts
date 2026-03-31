@@ -86,7 +86,8 @@ async function initiateConnect(
       connection,
       redirect_uri: redirectUri,
       state,
-      scopes,
+      // Only include scopes when non-empty — the API rejects an empty array
+      ...(scopes.length > 0 ? { scopes } : {}),
     }),
     signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
   });
