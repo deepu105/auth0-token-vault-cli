@@ -1,6 +1,6 @@
 {
   "name": "auth0-token-vault-cli",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Auth0 Token Vault CLI — Access third-party services (Gmail, Slack, etc.) on behalf of authenticated users via Auth0 Token Vault. Designed for both humans and AI agents.",
   "type": "module",
   "main": "dist/index.js",
