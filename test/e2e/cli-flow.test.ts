@@ -315,4 +315,39 @@ describe.sequential('CLI e2e', () => {
       },
     });
   });
+
+  it('init: full happy path with fake scripts', async () => {
+    fixture = await setupE2eFixture();
+
+    // Run init with stdin providing the client_id when prompted.
+    const result = await fixture.runInitWithStdin(['init'], 'test-client-id\n');
+
+    expect(result.code).toBe(0);
+
+    // Verify setup wizard output
+    expect(result.stderr).toContain('Setup Wizard');
+    expect(result.stderr).toContain('Callback URLs configured');
+    expect(result.stderr).toContain('Credentials retrieved');
+    expect(result.stderr).toContain('Setup complete');
+
+    // After init, verify status shows logged in
+    const status = await fixture.run(['--json', 'status']);
+    expect(status.code).toBe(0);
+    const json = parseJson(status);
+    expect(json.loggedIn).toBe(true);
+    expect(json.domain).toBe('test.auth0.com');
+    expect(json.clientId).toBe('test-client-id');
+  });
+
+  it('init: fails in non-interactive mode', async () => {
+    fixture = await setupE2eFixture();
+
+    // run() does not set AUTH0_TV_FORCE_INTERACTIVE, so init sees non-TTY stdin
+    const result = await fixture.run(['--json', 'init']);
+
+    expect(result.code).not.toBe(0);
+    // Check either stderr or JSON error output
+    const combined = result.stderr + result.stdout;
+    expect(combined).toContain('interactive terminal');
+  });
 });

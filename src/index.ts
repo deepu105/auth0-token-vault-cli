@@ -14,6 +14,7 @@ import { createCalendarCommand } from './commands/calendar/index.js';
 import { createSlackCommand } from './commands/slack/index.js';
 import { createGitHubCommand } from './commands/github/index.js';
 import { registerFetchCommand } from './commands/fetch.js';
+import { registerInitCommand } from './commands/init.js';
 
 // Global error handlers
 ['uncaughtException', 'unhandledRejection'].forEach((event) => {
@@ -67,6 +68,9 @@ program.addCommand(createGitHubCommand());
 
 // ── API passthrough ──────────────────────────────────────────
 registerFetchCommand(program);
+
+// ── Setup wizard ─────────────────────────────────────────────
+registerInitCommand(program);
 
 // ── Unknown command handling ───────────────────────────────────
 program.on('command:*', () => {

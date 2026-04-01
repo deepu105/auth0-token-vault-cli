@@ -56,11 +56,11 @@ export async function resolveConfigWithPrompts(
  * Note: No regex validation is applied here. The result is always used in
  * `new URL(`https://${domain}`)` constructors downstream, which reject
  * malformed domains, providing defense-in-depth against injection. */
-function cleanDomain(domain: string): string {
+export function cleanDomain(domain: string): string {
   return domain.replace(/^https?:\/\//, '').replace(/\/+$/, '');
 }
 
-async function askRequired(
+export async function askRequired(
   rl: ReturnType<typeof createInterface>,
   prompt: string
 ): Promise<string> {

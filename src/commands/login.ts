@@ -6,6 +6,46 @@ import { output, outputError } from '../utils/output.js';
 import { EXIT_GENERAL, EXIT_NETWORK_ERROR, isNetworkError } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
 import { runPkceFlow } from '../auth/pkce-flow.js';
+import type { StoredConfig } from '../store/types.js';
+
+/**
+ * Core login logic shared by `login` and `init` commands.
+ * Resolves config, runs PKCE flow, and persists credentials.
+ */
+export async function runLogin(options: {
+  existing?: StoredConfig | null;
+  browser?: string;
+  port?: number;
+}): Promise<{ reauthenticated: boolean }> {
+  const store = new CredentialStore();
+
+  const config = await resolveConfigWithPrompts(options.existing);
+
+  await store.saveConfig({
+    domain: config.domain,
+    clientId: config.clientId,
+    clientSecret: config.clientSecret,
+    audience: config.audience,
+  });
+
+  const existingToken = await store.getAuth0Token();
+  const reauthenticated = Boolean(existingToken);
+
+  const tokens = await runPkceFlow({
+    config,
+    browser: options.browser,
+    port: options.port,
+  });
+
+  await store.saveAuth0Tokens({
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token,
+    idToken: tokens.id_token,
+    expiresAt: Date.now() + tokens.expires_in * 1000,
+  });
+
+  return { reauthenticated };
+}
 
 export function registerLoginCommand(program: Command) {
   program
@@ -15,33 +55,13 @@ export function registerLoginCommand(program: Command) {
     .action(async (opts, cmd: Command) => {
       try {
         const store = new CredentialStore();
-
-        // Resolve config: each field checked against env var, then store, then prompt
         const existing = opts.reconfigure ? null : await store.getConfig();
-        const config = await resolveConfigWithPrompts(existing);
-
-        // Persist resolved config to the store (unless all fields came from env)
-        await store.saveConfig({
-          domain: config.domain,
-          clientId: config.clientId,
-          clientSecret: config.clientSecret,
-          audience: config.audience,
-        });
-
-        const existingToken = await store.getAuth0Token();
-        const reauthenticated = Boolean(existingToken);
 
         const globals = cmd.optsWithGlobals();
         const browser = resolveBrowser(globals.browser);
         const port = resolveCallbackPort(globals.port);
-        const tokens = await runPkceFlow({ config, browser, port });
 
-        await store.saveAuth0Tokens({
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token,
-          idToken: tokens.id_token,
-          expiresAt: Date.now() + tokens.expires_in * 1000,
-        });
+        const { reauthenticated } = await runLogin({ existing, browser, port });
 
         output(
           {

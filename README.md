@@ -15,13 +15,42 @@ For a lightweight and flexible proxy instead of this CLI, use [Auth0 Token Vault
 - [Google Tasks](https://auth0.com/ai/docs/integrations/google) - coming soon!
 - More coming soon!
 
-## Auth0 Tenant Setup
-
-### Prerequisites
+## Prerequisites
 
 - An [Auth0 Account](https://auth0.com/signup?onboard_app=auth_for_aa&ocid=701KZ000000cXXxYAM-aPA4z0000008OZeGAM)
 - [Auth0 CLI](https://github.com/auth0/auth0-cli) installed and logged in
 - At least one [connection](https://auth0.com/ai/docs/integrations/overview) configured (e.g. [Google](https://auth0.com/ai/docs/integrations/google))
+
+## Quick Start
+
+```bash
+# Install
+npm install -g auth0-token-vault-cli
+
+# Run the guided setup wizard (recommended for first-time setup)
+auth0-tv init
+```
+
+The `init` wizard will:
+
+1. Check prerequisites (Auth0 CLI, Node.js)
+2. Run the Token Vault configuration wizard
+3. Configure callback URLs
+4. Retrieve your credentials
+5. Authenticate via browser
+
+After setup, connect services and start using them:
+
+```bash
+auth0-tv connect gmail
+auth0-tv gmail search "from:boss@company.com"
+auth0-tv calendar events
+auth0-tv slack search "project update"
+```
+
+## Auth0 Tenant Setup
+
+> **Tip:** The `auth0-tv init` command automates all of these steps. Use manual setup only if you need more control.
 
 ### Install the Auth0 CLI
 
@@ -85,7 +114,9 @@ npm install -g auth0-token-vault-cli
 
 Requires Node.js 20+.
 
-## Quick Start
+## Manual Setup
+
+If you prefer manual setup over `auth0-tv init`:
 
 ### 1. Login
 
@@ -187,7 +218,9 @@ Set environment variables **or** run `auth0-tv login`, which prompts for the req
 ### Authentication
 
 ```bash
+auth0-tv init                     # Interactive guided setup wizard (recommended first time)
 auth0-tv login                    # Authenticate via browser-based PKCE flow
+auth0-tv login --reconfigure      # Re-prompt for Auth0 domain, client ID, and secret
 auth0-tv --port 18486 login       # Force callback server to a specific port
 auth0-tv status                   # Show current user and connected services
 auth0-tv connect gmail            # Connect Gmail (opens browser)

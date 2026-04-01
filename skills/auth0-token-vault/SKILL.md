@@ -42,6 +42,20 @@ authenticated users via Auth0 Token Vault.
 
 If `auth0-tv --json status` returns a `not_configured` error, guide the user through setup:
 
+1. **Run the interactive setup wizard** (recommended — handles all steps automatically):
+
+   ```bash
+   auth0-tv init
+   ```
+
+   The `init` wizard will check prerequisites, configure Token Vault, set up callback URLs, retrieve credentials, and authenticate — all in one guided flow.
+
+   All setup steps require human interaction. Do not attempt to run them autonomously.
+
+### Manual setup (alternative)
+
+If the wizard is not suitable, guide the user through manual setup:
+
 1. **Install Auth0 CLI** (if not already installed):
 
    ```bash
