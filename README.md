@@ -20,6 +20,7 @@ For a lightweight and flexible proxy instead of this CLI, use [Auth0 Token Vault
 - An [Auth0 Account](https://auth0.com/signup?onboard_app=auth_for_aa&ocid=701KZ000000cXXxYAM-aPA4z0000008OZeGAM)
 - [Auth0 CLI](https://github.com/auth0/auth0-cli) installed and logged in
 - At least one [connection](https://auth0.com/ai/docs/integrations/overview) configured (e.g. [Google](https://auth0.com/ai/docs/integrations/google))
+- Requires Node.js 20+.
 
 ## Quick Start
 
@@ -42,114 +43,17 @@ The `init` wizard will:
 After setup, connect services and start using them:
 
 ```bash
-auth0-tv connect gmail
-auth0-tv gmail search "from:boss@company.com"
-auth0-tv calendar events
-auth0-tv slack search "project update"
-```
-
-## Auth0 Tenant Setup
-
-> **Tip:** The `auth0-tv init` command automates all of these steps. Use manual setup only if you need more control.
-
-### Install the Auth0 CLI
-
-```bash
-# macOS
-brew tap auth0/auth0-cli && brew install auth0
-
-# Other platforms — see https://github.com/auth0/auth0-cli
-```
-
-### Configure Token Vault
-
-Run the interactive setup wizard. It logs you into Auth0 CLI then creates and configures an Auth0 application with Token Vault, My Account API, MRRT, and client grants — everything that `auth0-tv` needs:
-
-```bash
-npx configure-auth0-token-vault
-```
-
-1. When asked, **How would you like to configure the application?**, select **Create a new application**. If you already have an application you'd like to use, select **Use an existing application** and follow the prompts to set it up for Token Vault.
-2. If asked, **Select application type**, choose **Regular Web Application**.
-3. When asked, **Which Token Vault configuration do you need?**, select **Refresh Token Exchange**.
-
-The wizard will:
-
-- Configures the Regular Web Application with the necessary settings for Token Vault
-- Enable the Token Vault grant type
-- Activate the My Account API with Connected Accounts scopes
-- Create the necessary client grants
-- Configure Multi-Resource Refresh Token (MRRT) policies
-- Enable your social connections on the application
-
-Note the **Client ID** from the output — you'll need them for `auth0-tv login`.
-
-> **Tip:** The wizard is idempotent — safe to re-run if you need to update the configuration.
-
-### Configure callback URLs
-
-After running the wizard, configure your application's callback and logout URLs for `auth0-tv` using the Auth0 CLI. Replace `<APP_ID>` with the Client ID from the previous step:
-
-```bash
-auth0 apps update <APP_ID> \
-  --callbacks "http://127.0.0.1:18484/callback,http://127.0.0.1:18485/callback,http://127.0.0.1:18486/callback,http://127.0.0.1:18487/callback,http://127.0.0.1:18488/callback,http://127.0.0.1:18489/callback" \
-  --logout-urls "http://127.0.0.1:18484,http://127.0.0.1:18485,http://127.0.0.1:18486,http://127.0.0.1:18487,http://127.0.0.1:18488,http://127.0.0.1:18489"
-```
-
-If you plan to use a custom `--port`, add that port's URLs as well.
-
-### Get Client Secret
-
-Retrieve your application's client secret (needed during `auth0-tv login`):
-
-```bash
-auth0 apps show <APP_ID> --reveal-secrets
-```
-
-## Installation
-
-```bash
-npm install -g auth0-token-vault-cli
-```
-
-Requires Node.js 20+.
-
-## Manual Setup
-
-If you prefer manual setup over `auth0-tv init`:
-
-### 1. Login
-
-```bash
-auth0-tv login
-```
-
-### 2. Connect a service
-
-```bash
+# Connect services
 auth0-tv connect gmail
 auth0-tv connect calendar
 auth0-tv connect slack
-auth0-tv connect github
-```
-
-### 3. Search emails
-
-```bash
+# Make authenticated API calls
 auth0-tv gmail search "from:boss@company.com"
-```
-
-### 4. Check upcoming events
-
-```bash
 auth0-tv calendar events --from 2026-03-28T00:00:00Z
-```
-
-### 5. Search Slack
-
-```bash
 auth0-tv slack search "project update"
 ```
+
+For manual setup instructions, see the [Manual Setup](#manual-setup) section below.
 
 ## Agent Integration
 
@@ -381,6 +285,72 @@ auth0-tv gmail send --to a@b.com --subject "Hi" --body-file ./message.txt
 
 # From stdin
 echo "Hello" | auth0-tv gmail send --to a@b.com --subject "Hi" --confirm
+```
+
+## Manual Setup
+
+> **Tip:** The `auth0-tv init` command automates all of these steps. Use manual setup only if you need more control.
+
+### Install the Auth0 CLI
+
+```bash
+# macOS
+brew tap auth0/auth0-cli && brew install auth0
+
+# Other platforms — see https://github.com/auth0/auth0-cli
+```
+
+### Configure Token Vault
+
+Run the interactive setup wizard. It logs you into Auth0 CLI then creates and configures an Auth0 application with Token Vault, My Account API, MRRT, and client grants — everything that `auth0-tv` needs:
+
+```bash
+npx configure-auth0-token-vault
+```
+
+1. When asked, **How would you like to configure the application?**, select **Create a new application**. If you already have an application you'd like to use, select **Use an existing application** and follow the prompts to set it up for Token Vault.
+2. If asked, **Select application type**, choose **Regular Web Application**.
+3. When asked, **Which Token Vault configuration do you need?**, select **Refresh Token Exchange**.
+
+The wizard will:
+
+- Configures the Regular Web Application with the necessary settings for Token Vault
+- Enable the Token Vault grant type
+- Activate the My Account API with Connected Accounts scopes
+- Create the necessary client grants
+- Configure Multi-Resource Refresh Token (MRRT) policies
+- Enable your social connections on the application
+
+Note the **Client ID** from the output — you'll need them for `auth0-tv login`.
+
+> **Tip:** The wizard is idempotent — safe to re-run if you need to update the configuration.
+
+### Configure callback URLs
+
+After running the wizard, configure your application's callback and logout URLs for `auth0-tv` using the Auth0 CLI. Replace `<APP_ID>` with the Client ID from the previous step:
+
+```bash
+auth0 apps update <APP_ID> \
+  --callbacks "http://127.0.0.1:18484/callback,http://127.0.0.1:18485/callback,http://127.0.0.1:18486/callback,http://127.0.0.1:18487/callback,http://127.0.0.1:18488/callback,http://127.0.0.1:18489/callback" \
+  --logout-urls "http://127.0.0.1:18484,http://127.0.0.1:18485,http://127.0.0.1:18486,http://127.0.0.1:18487,http://127.0.0.1:18488,http://127.0.0.1:18489"
+```
+
+If you plan to use a custom `--port`, add that port's URLs as well.
+
+### Get Client Secret
+
+Retrieve your application's client secret (needed during `auth0-tv login`):
+
+```bash
+auth0 apps show <APP_ID> --reveal-secrets
+```
+
+If you prefer manual setup over `auth0-tv init`:
+
+### 1. Login
+
+```bash
+auth0-tv login
 ```
 
 ## Development
