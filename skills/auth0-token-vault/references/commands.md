@@ -63,13 +63,20 @@ Example JSON output:
 
 ### connect
 
-Connect a third-party service. **Requires human interaction** (opens browser for OAuth).
+Connect a third-party service or any Auth0 connection. **Requires human interaction** (opens browser for OAuth).
+
+Known services (gmail, calendar, github, slack) have default scopes and allowed domains. Any other name is treated as a custom Auth0 connection — the input string is used directly as the connection identifier sent to Auth0.
 
 ```bash
+# Known services
 auth0-tv connect gmail
 auth0-tv --port 18486 connect gmail
 auth0-tv connect github --allowed-domains "api.github.com,ghcr.io"
 auth0-tv connect gmail --scopes "https://www.googleapis.com/auth/gmail.labels"
+
+# Custom Auth0 connections (any connection configured on your tenant)
+auth0-tv connect my-enterprise-idp --scopes "openid,profile" --allowed-domains "api.example.com"
+auth0-tv connect google-oauth2 --scopes "https://www.googleapis.com/auth/drive.readonly" --allowed-domains "*.googleapis.com"
 ```
 
 | Flag                       | Description                                                                  |
@@ -77,17 +84,18 @@ auth0-tv connect gmail --scopes "https://www.googleapis.com/auth/gmail.labels"
 | `--allowed-domains <list>` | Comma-separated domains allowed for `auth0-tv fetch` (additive)              |
 | `--scopes <list>`          | Comma-separated extra scopes to request (merged with service default scopes) |
 
-Each service has default allowed domains built in. Use `--allowed-domains` only to add extra domains beyond the defaults.
+Known services have default allowed domains and scopes built in. Custom connections have no defaults — use `--scopes` and `--allowed-domains` to configure them.
 
 Use `--scopes` to request additional OAuth scopes beyond the service defaults (e.g. for API endpoints not covered by the built-in scope set). Extra scopes are merged and deduplicated with the service's default scopes and any existing remote scopes.
 
 ### disconnect
 
-Disconnect a third-party service. By default, only removes the locally-cached token. Use `--remote` to also remove the server-side connection from Auth0 Token Vault.
+Disconnect a third-party service or custom connection. By default, only removes the locally-cached token. Use `--remote` to also remove the server-side connection from Auth0 Token Vault.
 
 ```bash
 auth0-tv --json disconnect gmail
 auth0-tv --json disconnect gmail --remote
+auth0-tv --json disconnect my-enterprise-idp
 ```
 
 | Flag       | Description                                                |
@@ -725,17 +733,21 @@ auth0-tv --json github search issues "auth0" --sort comments --limit 10
 
 ## API passthrough (fetch)
 
-Make an authenticated HTTP request to an allowed domain using a service's token. Only HTTPS URLs are permitted.
+Make an authenticated HTTP request to an allowed domain using a service or custom connection token. Only HTTPS URLs are permitted.
 
 ### fetch
 
 ```bash
+# Known services
 auth0-tv --json fetch github https://api.github.com/user
 auth0-tv --json fetch gmail https://gmail.googleapis.com/gmail/v1/users/me/messages -X GET
 auth0-tv --json fetch slack https://slack.com/api/conversations.list
 auth0-tv --json fetch github https://api.github.com/repos/octocat/Hello-World/issues -X POST -d '{"title":"Bug"}'
 auth0-tv --json fetch github https://api.github.com/user -H "Accept: application/vnd.github.v3+json"
 auth0-tv --json fetch slack https://slack.com/api/chat.postMessage -X POST --data-file ./payload.json
+
+# Custom connections (requires --allowed-domains set during connect)
+auth0-tv --json fetch my-enterprise-idp https://api.example.com/users/me
 ```
 
 | Flag                    | Description                    | Default |
@@ -754,7 +766,7 @@ auth0-tv --json fetch slack https://slack.com/api/chat.postMessage -X POST --dat
 | `github`   | `api.github.com`           |
 | `slack`    | `slack.com`, `*.slack.com` |
 
-Additional domains can be added with `auth0-tv connect <service> --allowed-domains <list>`. Custom domains are merged with the defaults.
+Additional domains can be added with `auth0-tv connect <service> --allowed-domains <list>`. For known services, custom domains are merged with the defaults. Custom connections have no default domains — `--allowed-domains` must be set during `connect` for `fetch` to work.
 
 The `Authorization: Bearer <token>` header is added automatically. You can add extra headers with `-H`.
 

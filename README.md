@@ -6,6 +6,8 @@ For a lightweight and flexible proxy instead of this CLI, use [Auth0 Token Vault
 
 ## Available Services
 
+Built-in services with default scopes and allowed domains:
+
 - [Gmail](https://auth0.com/ai/docs/integrations/google)
 - [Google Calendar](https://auth0.com/ai/docs/integrations/google)
 - [Slack](https://auth0.com/ai/docs/integrations/slack)
@@ -14,6 +16,8 @@ For a lightweight and flexible proxy instead of this CLI, use [Auth0 Token Vault
 - [Google Contacts](https://auth0.com/ai/docs/integrations/google) - coming soon!
 - [Google Tasks](https://auth0.com/ai/docs/integrations/google) - coming soon!
 - More coming soon!
+
+You can also connect **any Auth0 connection** configured on your tenant (social, enterprise, or custom). See [Custom Connections](#custom-connections) below.
 
 ## Prerequisites
 
@@ -47,10 +51,15 @@ After setup, connect services and start using them:
 auth0-tv connect gmail
 auth0-tv connect calendar
 auth0-tv connect slack
+
+# Or connect any Auth0 connection by name
+auth0-tv connect my-enterprise-idp --scopes "openid,profile" --allowed-domains "api.example.com"
+
 # Make authenticated API calls
 auth0-tv gmail search "from:boss@company.com"
 auth0-tv calendar events --from 2026-03-28T00:00:00Z
 auth0-tv slack search "project update"
+auth0-tv fetch my-enterprise-idp https://api.example.com/users/me
 ```
 
 For manual setup instructions, see the [Manual Setup](#manual-setup) section below.
@@ -132,11 +141,13 @@ auth0-tv connect calendar         # Connect Google Calendar
 auth0-tv connect slack            # Connect Slack
 auth0-tv connect github           # Connect GitHub
 auth0-tv connect github --allowed-domains "ghcr.io"  # Add extra allowed domains for fetch
+auth0-tv connect my-idp --scopes "read,write" --allowed-domains "api.example.com"  # Custom connection
 auth0-tv --port 18486 connect gmail
 auth0-tv --port 18486 logout
 auth0-tv connections              # List connected services (remote + local status)
 auth0-tv disconnect gmail         # Disconnect Gmail (local only)
 auth0-tv disconnect gmail --remote  # Disconnect Gmail (local + remote)
+auth0-tv disconnect my-idp        # Disconnect custom connection
 ```
 
 ### Gmail
@@ -213,7 +224,7 @@ auth0-tv github search issues "bug label:critical"
 
 ### API Passthrough (fetch)
 
-Make authenticated HTTP requests to allowed domains using a service's token. Only HTTPS URLs are permitted. Each service has default allowed domains built in:
+Make authenticated HTTP requests to allowed domains using a service or custom connection token. Only HTTPS URLs are permitted. Known services have default allowed domains built in:
 
 | Service    | Default allowed domains    |
 | ---------- | -------------------------- |
@@ -223,12 +234,16 @@ Make authenticated HTTP requests to allowed domains using a service's token. Onl
 | `slack`    | `slack.com`, `*.slack.com` |
 
 ```bash
+# Known services (use default allowed domains)
 auth0-tv fetch github https://api.github.com/user
 auth0-tv fetch gmail https://gmail.googleapis.com/gmail/v1/users/me/messages
 auth0-tv fetch slack https://slack.com/api/conversations.list
 auth0-tv fetch github https://api.github.com/repos/octocat/Hello-World/issues -X POST -d '{"title":"Bug"}'
 auth0-tv fetch github https://api.github.com/user -H "Accept: application/vnd.github.v3+json"
 auth0-tv fetch slack https://slack.com/api/chat.postMessage -X POST --data-file ./payload.json
+
+# Custom connections (requires --allowed-domains set during connect)
+auth0-tv fetch my-enterprise-idp https://api.example.com/users/me
 ```
 
 The `Authorization: Bearer <token>` header is injected automatically. Add extra domains with `--allowed-domains` on `connect`:
@@ -236,6 +251,24 @@ The `Authorization: Bearer <token>` header is injected automatically. Add extra 
 ```bash
 auth0-tv connect github --allowed-domains "ghcr.io,uploads.github.com"
 ```
+
+### Custom Connections
+
+You can connect any Auth0 connection configured on your tenant — not just the built-in services. Use the Auth0 connection identifier directly:
+
+```bash
+# Connect with scopes and allowed domains
+auth0-tv connect google-oauth2 --scopes "https://www.googleapis.com/auth/drive.readonly" --allowed-domains "*.googleapis.com"
+auth0-tv connect my-enterprise-idp --scopes "openid,profile,email" --allowed-domains "api.example.com"
+
+# Make authenticated API calls
+auth0-tv fetch my-enterprise-idp https://api.example.com/users/me
+
+# Disconnect
+auth0-tv disconnect my-enterprise-idp
+```
+
+Custom connections have no default scopes or allowed domains. Use `--scopes` to request OAuth scopes and `--allowed-domains` to configure which domains `fetch` can access. Auth0 validates the connection name server-side — if the connection doesn't exist on your tenant, the connect flow will fail with an error from Auth0.
 
 ### Global Flags
 

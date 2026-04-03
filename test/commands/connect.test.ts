@@ -14,6 +14,7 @@ import {
   getServiceEntry,
   getConnectionForService,
   getAvailableServices,
+  resolveService,
 } from '../../src/utils/service-registry.js';
 
 const config: Auth0Config = {
@@ -361,5 +362,98 @@ describe('connect --scopes flag', () => {
     expect(scopes).toContain('https://www.googleapis.com/auth/gmail.modify');
 
     msw.close();
+  });
+});
+
+describe('connect custom/unknown services', () => {
+  const msw = setupServer(...handlers);
+  let tempDir: string;
+  let store: CredentialStore;
+
+  beforeAll(() => msw.listen({ onUnhandledRequest: 'bypass' }));
+  afterAll(() => msw.close());
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'auth0-tv-connect-custom-'));
+    store = new CredentialStore(tempDir);
+  });
+
+  afterEach(async () => {
+    msw.resetHandlers();
+    clearOidcConfigCache();
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  it('resolveService returns unknown entry for custom service', () => {
+    const resolved = resolveService('my-custom-idp');
+    expect(resolved.isKnown).toBe(false);
+    expect(resolved.connection).toBe('my-custom-idp');
+    expect(resolved.scopes).toEqual([]);
+    expect(resolved.allowedDomains).toEqual([]);
+  });
+
+  it('custom service uses only user-supplied scopes', () => {
+    const resolved = resolveService('my-custom-idp');
+    const extraScopes = 'read,write,profile';
+    const parsed = extraScopes
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const scopes = [...new Set([...resolved.scopes, ...parsed])];
+
+    // Only user-supplied scopes, no defaults
+    expect(scopes).toEqual(['read', 'write', 'profile']);
+  });
+
+  it('custom service saves allowed domains via service settings', async () => {
+    const serviceName = 'my-custom-idp';
+    const domains = ['api.example.com', '*.example.org'];
+
+    await store.saveServiceSettings(serviceName, { allowedDomains: domains });
+    const settings = await store.getServiceSettings(serviceName);
+    expect(settings?.allowedDomains).toEqual(domains);
+  });
+
+  it('custom service can exchange tokens with any connection string', async () => {
+    await store.saveAuth0Tokens({
+      accessToken: 'valid-token',
+      refreshToken: 'valid-refresh-token',
+      expiresAt: Date.now() + 3600_000,
+    });
+
+    // Token exchange works with any connection name — Auth0 validates server-side
+    const token = await exchangeForConnectionToken(config, store, 'my-custom-idp');
+    expect(token).toBe(mockExchangeResponse.access_token);
+  });
+
+  it('custom service merges user scopes with remote scopes', async () => {
+    msw.use(
+      http.get('https://test.auth0.com/me/v1/connected-accounts/accounts', () =>
+        HttpResponse.json({
+          accounts: [
+            {
+              id: 'ca_custom1',
+              connection: 'my-custom-idp',
+              scopes: ['existing-scope'],
+            },
+          ],
+        })
+      )
+    );
+
+    const resolved = resolveService('my-custom-idp');
+    const extraScopes = ['read', 'write'];
+    let scopes = [...new Set([...resolved.scopes, ...extraScopes])];
+
+    const remoteAccounts = await listConnectedAccounts(config, 'valid-refresh-token');
+    const existing = remoteAccounts.find((a) => a.connection === resolved.connection);
+    if (existing?.scopes.length) {
+      scopes = [...new Set([...scopes, ...existing.scopes])];
+    }
+
+    expect(scopes).toContain('read');
+    expect(scopes).toContain('write');
+    expect(scopes).toContain('existing-scope');
   });
 });

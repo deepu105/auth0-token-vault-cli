@@ -6,11 +6,20 @@
  * so adding a new service is a single-file change.
  */
 
-interface ServiceEntry {
+export interface ServiceEntry {
   connection: string;
   scopes: string[];
   /** Default allowed domains for the `fetch` command. */
   allowedDomains: string[];
+}
+
+/** Result of resolveService() — consistent shape for both known and unknown services. */
+export interface ResolvedService {
+  connection: string;
+  scopes: string[];
+  allowedDomains: string[];
+  /** true when the service is in the built-in registry. */
+  isKnown: boolean;
 }
 
 const SERVICE_REGISTRY: Record<string, ServiceEntry> = {
@@ -99,4 +108,25 @@ export function getServicesForConnection(connection: string): string[] {
 /** Get all available service names. */
 export function getAvailableServices(): string[] {
   return Object.keys(SERVICE_REGISTRY);
+}
+
+/**
+ * Resolve a service name to a connection config.
+ *
+ * Known services (gmail, calendar, github, slack) return the registry entry
+ * with `isKnown: true`. Unknown services return a minimal entry that uses the
+ * input string as the Auth0 connection name directly, with empty scopes and
+ * allowed domains, and `isKnown: false`.
+ */
+export function resolveService(service: string): ResolvedService {
+  const entry = getServiceEntry(service);
+  if (entry) {
+    return { ...entry, isKnown: true };
+  }
+  return {
+    connection: service.toLowerCase(),
+    scopes: [],
+    allowedDomains: [],
+    isKnown: false,
+  };
 }

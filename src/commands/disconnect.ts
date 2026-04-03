@@ -1,32 +1,22 @@
 import type { Command } from 'commander';
 import chalk from 'chalk';
 import { output, outputError } from '../utils/output.js';
-import { EXIT_AUTH_REQUIRED, EXIT_INVALID_INPUT } from '../utils/exit-codes.js';
+import { EXIT_AUTH_REQUIRED } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
 import { listConnectedAccounts, deleteConnectedAccount } from '../auth/connected-accounts.js';
 import { requireConfig } from '../utils/config.js';
 import { logError } from '../utils/logger.js';
-import { getConnectionForService, getAvailableServices } from '../utils/service-registry.js';
+import { resolveService } from '../utils/service-registry.js';
 
 export function registerDisconnectCommand(program: Command) {
   program
     .command('disconnect <service>')
-    .description('Disconnect a third-party service')
+    .description('Disconnect a third-party service or Auth0 connection')
     .option('--remote', 'Also remove the server-side connection (Auth0 Token Vault)')
     .action(async (service: string, opts, cmd: Command) => {
       const serviceLower = service.toLowerCase();
-      const connection = getConnectionForService(serviceLower);
-
-      if (!connection) {
-        outputError(
-          {
-            code: 'invalid_service',
-            message: `Unknown service: ${service}. Available: ${getAvailableServices().join(', ')}`,
-          },
-          cmd
-        );
-        process.exit(EXIT_INVALID_INPUT);
-      }
+      const resolved = resolveService(serviceLower);
+      const connection = resolved.connection;
 
       const store = new CredentialStore();
       let remoteDeleted = false;

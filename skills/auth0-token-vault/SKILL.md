@@ -1,12 +1,13 @@
 ---
 name: auth0-token-vault
 description: >
-  Access third-party services (Gmail, Slack, Google Calendar, GitHub) on behalf of
-  authenticated users via Auth0 Token Vault. Use when the user wants to search,
-  read, send, or manage emails, manage calendar events, interact with Slack,
-  manage GitHub repos/issues/PRs/notifications, make authenticated API calls to
-  third-party services, connect or disconnect external services, or check their
-  authentication and connection status. Wraps the auth0-tv CLI.
+  Access third-party services (Gmail, Slack, Google Calendar, GitHub) and custom
+  Auth0 connections on behalf of authenticated users via Auth0 Token Vault. Use
+  when the user wants to search, read, send, or manage emails, manage calendar
+  events, interact with Slack, manage GitHub repos/issues/PRs/notifications, make
+  authenticated API calls to third-party services or custom identity providers,
+  connect or disconnect external services, or check their authentication and
+  connection status. Wraps the auth0-tv CLI.
 compatibility: Requires Node.js 20+ and auth0-tv installed globally (npm i -g auth0-token-vault-cli)
 license: MIT
 allowed-tools: Bash(auth0-tv *)
@@ -105,6 +106,7 @@ All setup steps require human interaction. Do not attempt to run them autonomous
 - The user wants to list repos, view issues/PRs, create issues, search code, or manage GitHub notifications
 - The user wants to make an authenticated API call to a third-party service
 - The user wants to connect or disconnect a third-party service (Gmail, Google Calendar, Slack, GitHub)
+- The user wants to connect a custom Auth0 connection (any social/enterprise identity provider configured on their tenant)
 - The user asks about their authentication or connection status
 
 ## Key patterns
@@ -160,9 +162,9 @@ Prefer `--body-file` or stdin for messages containing special characters.
 - `auth0-tv login [--reconfigure]` — authenticate via browser (human-in-the-loop)
 - `auth0-tv logout` — clear stored credentials
 - `auth0-tv status` — show current user and connected services
-- `auth0-tv connect <service>` — connect a service via browser (human-in-the-loop)
-- `auth0-tv connect <service> --allowed-domains <domains>` — connect with extra allowed domains for `fetch`
-- `auth0-tv disconnect <service>` — disconnect a service (local token only by default)
+- `auth0-tv connect <service>` — connect a known service via browser (human-in-the-loop)
+- `auth0-tv connect <connection-name> --scopes <scopes> --allowed-domains <domains>` — connect any Auth0 connection by name
+- `auth0-tv disconnect <service>` — disconnect a service or custom connection (local token only by default)
 - `auth0-tv disconnect <service> --remote` — disconnect a service and remove the server-side connection
 - `auth0-tv connections` — list connected services (remote accounts with local token status)
 
@@ -225,11 +227,12 @@ Prefer `--body-file` or stdin for messages containing special characters.
 ### API passthrough (fetch)
 
 - `auth0-tv fetch <service> <url>` — make an authenticated HTTP request to an allowed domain
+- `auth0-tv fetch <connection-name> <url>` — fetch using a custom Auth0 connection token
 - `auth0-tv fetch <service> <url> -X POST -d '{"key":"value"}'` — POST with inline body
 - `auth0-tv fetch <service> <url> -X POST --data-file ./body.json` — POST with body from file
 - `auth0-tv fetch <service> <url> -H "Accept: text/plain"` — add custom headers
 
-Each service has default allowed domains built in:
+Known services have default allowed domains built in. Custom connections require `--allowed-domains` to be set during `connect`:
 
 | Service    | Default allowed domains    |
 | ---------- | -------------------------- |
@@ -238,6 +241,6 @@ Each service has default allowed domains built in:
 | `github`   | `api.github.com`           |
 | `slack`    | `slack.com`, `*.slack.com` |
 
-Additional domains can be added via `--allowed-domains` on `connect`. Only HTTPS URLs are allowed.
+Additional domains can be added via `--allowed-domains` on `connect`. Custom connections have no default domains — you must specify `--allowed-domains` when connecting. Only HTTPS URLs are allowed.
 
 See [references/commands.md](references/commands.md) for full command reference with flags and JSON output examples.

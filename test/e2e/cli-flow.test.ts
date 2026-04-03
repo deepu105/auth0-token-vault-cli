@@ -56,7 +56,9 @@ describe.sequential('CLI e2e', () => {
     });
 
     expect(await fixture.store.listConnections()).toContain('google-oauth2');
-    expect(await fixture.store.getConnectionToken('google-oauth2')).toBe('mock-gmail-access-token');
+    expect(await fixture.store.getConnectionToken('google-oauth2')).toBe(
+      'mock-google-oauth2-access-token'
+    );
 
     const connectionsResult = await fixture.run(['--json', 'connections']);
     expect(connectionsResult.code).toBe(0);
@@ -177,7 +179,7 @@ describe.sequential('CLI e2e', () => {
       body: {
         ok: true,
         method: 'GET',
-        authorization: 'Bearer mock-gmail-access-token',
+        authorization: 'Bearer mock-google-oauth2-access-token',
       },
     });
   });
@@ -249,40 +251,94 @@ describe.sequential('CLI e2e', () => {
     });
   });
 
-  it('returns invalid_service errors for unsupported services', async () => {
+  it('accepts custom connection names for connect, disconnect, and fetch', async () => {
     fixture = await setupE2eFixture();
 
-    const connectResult = await fixture.run(['--json', 'connect', 'not-a-service']);
-    expect(connectResult.code).toBe(2);
-    expect(parseJson(connectResult)).toEqual({
-      error: {
-        code: 'invalid_service',
-        message: 'Unknown service: not-a-service. Available: gmail, calendar, github, slack',
-      },
+    await login(fixture);
+
+    // Connect a custom service with scopes and allowed domains
+    const connectResult = await fixture.run([
+      '--json',
+      'connect',
+      'custom-idp',
+      '--scopes',
+      'read,write',
+      '--allowed-domains',
+      'api.example.test',
+    ]);
+    expect(connectResult.code).toBe(0);
+    const connectData = parseJson(connectResult);
+    expect(connectData).toMatchObject({
+      status: 'connected',
+      service: 'custom-idp',
+      connection: 'custom-idp',
+      allowedDomains: ['api.example.test'],
     });
 
-    const disconnectResult = await fixture.run(['--json', 'disconnect', 'not-a-service']);
-    expect(disconnectResult.code).toBe(2);
-    expect(parseJson(disconnectResult)).toEqual({
-      error: {
-        code: 'invalid_service',
-        message: 'Unknown service: not-a-service. Available: gmail, calendar, github, slack',
-      },
-    });
+    // Verify it appears in connections
+    const connectionsResult = await fixture.run(['--json', 'connections']);
+    expect(connectionsResult.code).toBe(0);
+    const connections = parseJson(connectionsResult).connections;
+    const customConn = connections.find((c) => c.connection === 'custom-idp');
+    expect(customConn).toBeDefined();
+    expect(customConn.tokenStatus).toBe('valid');
+    expect(customConn.service).toBe('custom-idp');
 
+    // Fetch using the custom connection
     const fetchResult = await fixture.run([
       '--json',
       'fetch',
-      'not-a-service',
+      'custom-idp',
+      'https://api.example.test/echo',
+    ]);
+    expect(fetchResult.code).toBe(0);
+    expect(parseJson(fetchResult)).toEqual({
+      status: 200,
+      body: {
+        ok: true,
+        method: 'GET',
+        authorization: 'Bearer mock-custom-idp-access-token',
+      },
+    });
+
+    // Fetch to a disallowed domain fails
+    const badFetchResult = await fixture.run([
+      '--json',
+      'fetch',
+      'custom-idp',
+      'https://evil.com/data',
+    ]);
+    expect(badFetchResult.code).toBe(2);
+    expect(parseJson(badFetchResult).error.code).toBe('domain_not_allowed');
+
+    // Disconnect the custom service
+    const disconnectResult = await fixture.run(['--json', 'disconnect', 'custom-idp']);
+    expect(disconnectResult.code).toBe(0);
+    expect(parseJson(disconnectResult)).toEqual({
+      status: 'disconnected',
+      service: 'custom-idp',
+      remote: false,
+    });
+  });
+
+  it('rejects fetch to custom connection with no allowed domains', async () => {
+    fixture = await setupE2eFixture();
+
+    await login(fixture);
+
+    // Connect without --allowed-domains
+    const connectResult = await fixture.run(['--json', 'connect', 'no-domains-idp']);
+    expect(connectResult.code).toBe(0);
+
+    // Fetch should fail with no_allowed_domains
+    const fetchResult = await fixture.run([
+      '--json',
+      'fetch',
+      'no-domains-idp',
       'https://api.example.test/echo',
     ]);
     expect(fetchResult.code).toBe(2);
-    expect(parseJson(fetchResult)).toEqual({
-      error: {
-        code: 'invalid_service',
-        message: 'Unknown service: not-a-service. Available: gmail, calendar, github, slack',
-      },
-    });
+    expect(parseJson(fetchResult).error.code).toBe('no_allowed_domains');
   });
 
   it('preserves config after local logout so status still shows tenant details', async () => {

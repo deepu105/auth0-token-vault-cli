@@ -9,6 +9,7 @@ import { CredentialStore, EXPIRY_BUFFER_MS } from '../../src/store/credential-st
 import { handlers, mockTokenResponse, mockListAccountsResponse } from '../mocks/handlers.js';
 import { listConnectedAccounts } from '../../src/auth/connected-accounts.js';
 import { requireConfig, type Auth0Config } from '../../src/utils/config.js';
+import { getServicesForConnection } from '../../src/utils/service-registry.js';
 
 const config: Auth0Config = {
   domain: 'test.auth0.com',
@@ -186,5 +187,46 @@ describe('connections command data', () => {
       : 'none';
 
     expect(tokenStatus).toBe('expired');
+  });
+
+  it('displays custom connections using raw connection name', async () => {
+    await store.saveAuth0Tokens({
+      accessToken: mockTokenResponse.access_token,
+      refreshToken: REFRESH_TOKEN,
+      expiresAt: Date.now() + 86400_000,
+    });
+
+    msw.use(
+      http.get('https://test.auth0.com/me/v1/connected-accounts/accounts', () =>
+        HttpResponse.json({
+          accounts: [
+            {
+              id: 'ca_abc123',
+              connection: 'google-oauth2',
+              scopes: ['https://www.googleapis.com/auth/gmail.modify'],
+            },
+            {
+              id: 'ca_custom1',
+              connection: 'my-custom-idp',
+              scopes: ['read', 'write'],
+            },
+          ],
+        })
+      )
+    );
+
+    const remoteAccounts = await listConnectedAccounts(config, REFRESH_TOKEN);
+    const entries = remoteAccounts.map((acct) => {
+      const services = getServicesForConnection(acct.connection);
+      return {
+        connection: acct.connection,
+        service: services.join(', ') || acct.connection,
+      };
+    });
+
+    // Known connection shows service names
+    expect(entries[0].service).toBe('gmail, calendar');
+    // Custom connection falls back to raw connection name
+    expect(entries[1].service).toBe('my-custom-idp');
   });
 });

@@ -2,17 +2,19 @@ import type { Command } from 'commander';
 import chalk from 'chalk';
 import { requireConfig, resolveBrowser, resolveCallbackPort } from '../utils/config.js';
 import { output, outputError } from '../utils/output.js';
-import { EXIT_AUTH_REQUIRED, EXIT_GENERAL, EXIT_INVALID_INPUT } from '../utils/exit-codes.js';
+import { EXIT_AUTH_REQUIRED, EXIT_GENERAL } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
 import { runConnectedAccountFlow, listConnectedAccounts } from '../auth/connected-accounts.js';
 import { exchangeForConnectionToken } from '../auth/token-exchange.js';
 import { log, logError } from '../utils/logger.js';
-import { getServiceEntry, getAvailableServices } from '../utils/service-registry.js';
+import { resolveService } from '../utils/service-registry.js';
 
 export function registerConnectCommand(program: Command) {
   program
     .command('connect <service>')
-    .description('Connect a third-party service (e.g. gmail)')
+    .description(
+      'Connect a third-party service (e.g. gmail) or any Auth0 connection by name (e.g. google-oauth2)'
+    )
     .option(
       '--allowed-domains <domains>',
       'Comma-separated domains allowed for `auth0-tv fetch` (e.g. api.github.com,api.slack.com)'
@@ -23,18 +25,7 @@ export function registerConnectCommand(program: Command) {
     )
     .action(async (service: string, opts, cmd: Command) => {
       const serviceLower = service.toLowerCase();
-      const mapping = getServiceEntry(serviceLower);
-
-      if (!mapping) {
-        outputError(
-          {
-            code: 'invalid_service',
-            message: `Unknown service: ${service}. Available: ${getAvailableServices().join(', ')}`,
-          },
-          cmd
-        );
-        process.exit(EXIT_INVALID_INPUT);
-      }
+      const resolved = resolveService(serviceLower);
 
       try {
         const store = new CredentialStore();
@@ -51,9 +42,9 @@ export function registerConnectCommand(program: Command) {
         }
 
         // Clear any stale cached connection token before re-authorizing
-        await store.removeConnection(mapping.connection);
+        await store.removeConnection(resolved.connection);
 
-        // Build scopes: always include full registry scopes for the target service,
+        // Build scopes: include registry defaults (empty for custom services),
         // plus any already-approved remote scopes (from sibling services on the same connection),
         // plus any extra scopes provided via --scopes.
         const extraScopes = opts.scopes
@@ -62,13 +53,13 @@ export function registerConnectCommand(program: Command) {
               .map((s: string) => s.trim())
               .filter(Boolean)
           : [];
-        let scopes = [...new Set([...mapping.scopes, ...extraScopes])];
+        let scopes = [...new Set([...resolved.scopes, ...extraScopes])];
         try {
           const remoteAccounts = await listConnectedAccounts(config, auth0Tokens.refreshToken);
-          const existing = remoteAccounts.find((a) => a.connection === mapping.connection);
+          const existing = remoteAccounts.find((a) => a.connection === resolved.connection);
           if (existing?.scopes.length) {
             scopes = [...new Set([...scopes, ...existing.scopes])];
-            log('merged existing remote scopes for %s: %o', mapping.connection, scopes);
+            log('merged existing remote scopes for %s: %o', resolved.connection, scopes);
           }
         } catch (err) {
           log(
@@ -89,7 +80,7 @@ export function registerConnectCommand(program: Command) {
         const result = await runConnectedAccountFlow({
           config,
           refreshToken: auth0Tokens.refreshToken,
-          connection: mapping.connection,
+          connection: resolved.connection,
           scopes,
           browser,
           port,
@@ -98,7 +89,7 @@ export function registerConnectCommand(program: Command) {
         // Immediately exchange for a connection token to validate the link
         let warning: string | undefined;
         try {
-          await exchangeForConnectionToken(config, store, mapping.connection);
+          await exchangeForConnectionToken(config, store, resolved.connection);
         } catch (exchangeErr) {
           logError('Token exchange after connect failed', exchangeErr);
           warning = exchangeErr instanceof Error ? exchangeErr.message : String(exchangeErr);

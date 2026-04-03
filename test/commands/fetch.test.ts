@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { isDomainAllowed } from '../../src/commands/fetch.js';
+import { resolveService } from '../../src/utils/service-registry.js';
 
 describe('isDomainAllowed', () => {
   it('allows exact domain match', () => {
@@ -50,5 +51,47 @@ describe('isDomainAllowed', () => {
   it('rejects when domain is a suffix of an allowed domain', () => {
     const url = new URL('https://github.com/user');
     expect(isDomainAllowed(url, ['api.github.com'])).toBe(false);
+  });
+});
+
+describe('fetch with custom services', () => {
+  it('known service has default allowed domains', () => {
+    const resolved = resolveService('gmail');
+    expect(resolved.allowedDomains).toEqual(['*.googleapis.com']);
+  });
+
+  it('custom service has empty default allowed domains', () => {
+    const resolved = resolveService('my-custom-idp');
+    expect(resolved.allowedDomains).toEqual([]);
+  });
+
+  it('custom service with stored domains allows matching requests', () => {
+    // Simulates the domain check after loading stored settings
+    const storedDomains = ['api.example.com', '*.example.org'];
+    const resolved = resolveService('my-custom-idp');
+    const allowedDomains =
+      storedDomains.length > 0
+        ? [...new Set([...storedDomains, ...resolved.allowedDomains])]
+        : resolved.allowedDomains;
+
+    const url = new URL('https://api.example.com/data');
+    expect(isDomainAllowed(url, allowedDomains)).toBe(true);
+
+    const wildcardUrl = new URL('https://sub.example.org/data');
+    expect(isDomainAllowed(wildcardUrl, allowedDomains)).toBe(true);
+
+    const blockedUrl = new URL('https://evil.com/steal');
+    expect(isDomainAllowed(blockedUrl, allowedDomains)).toBe(false);
+  });
+
+  it('custom service with no stored domains has empty allowed list', () => {
+    const resolved = resolveService('my-custom-idp');
+    const storedDomains: string[] = [];
+    const allowedDomains =
+      storedDomains.length > 0
+        ? [...new Set([...storedDomains, ...resolved.allowedDomains])]
+        : resolved.allowedDomains;
+
+    expect(allowedDomains).toEqual([]);
   });
 });

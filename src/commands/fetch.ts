@@ -10,11 +10,7 @@ import {
 } from '../utils/exit-codes.js';
 import { CredentialStore } from '../store/credential-store.js';
 import { exchangeForConnectionToken, TokenExchangeError } from '../auth/token-exchange.js';
-import {
-  getConnectionForService,
-  getAvailableServices,
-  getAllowedDomainsForService,
-} from '../utils/service-registry.js';
+import { resolveService } from '../utils/service-registry.js';
 
 /**
  * Validate that a URL's hostname is in the allowed domains list.
@@ -38,25 +34,17 @@ export function isDomainAllowed(url: URL, allowedDomains: string[]): boolean {
 export function registerFetchCommand(program: Command) {
   program
     .command('fetch <service> <url>')
-    .description('Make an authenticated HTTP request to an allowed URL using a service token')
+    .description(
+      'Make an authenticated HTTP request to an allowed URL using a service or Auth0 connection token'
+    )
     .option('-X, --method <method>', 'HTTP method', 'GET')
     .option('-H, --header <header...>', 'Additional headers (key: value)')
     .option('-d, --data <body>', 'Request body')
     .option('--data-file <path>', 'Read request body from file')
     .action(async (service: string, url: string, opts, cmd: Command) => {
       const serviceLower = service.toLowerCase();
-      const connection = getConnectionForService(serviceLower);
-
-      if (!connection) {
-        outputError(
-          {
-            code: 'invalid_service',
-            message: `Unknown service: ${service}. Available: ${getAvailableServices().join(', ')}`,
-          },
-          cmd
-        );
-        process.exit(EXIT_INVALID_INPUT);
-      }
+      const resolved = resolveService(serviceLower);
+      const connection = resolved.connection;
 
       // Parse and validate URL
       let parsedUrl: URL;
@@ -76,7 +64,7 @@ export function registerFetchCommand(program: Command) {
       const store = new CredentialStore();
       const settings = await store.getServiceSettings(serviceLower);
       const storedDomains = settings?.allowedDomains ?? [];
-      const defaultDomains = getAllowedDomainsForService(serviceLower) ?? [];
+      const defaultDomains = resolved.allowedDomains;
       const allowedDomains =
         storedDomains.length > 0
           ? [...new Set([...storedDomains, ...defaultDomains])]

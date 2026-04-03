@@ -144,7 +144,7 @@ globalThis.fetch = async (input, init) => {
       }
 
       return jsonResponse({
-        access_token: 'mock-gmail-access-token',
+        access_token: `mock-${connection}-access-token`,
         expires_in: 3600,
         token_type: 'Bearer',
         scope: 'https://www.googleapis.com/auth/gmail.modify',
@@ -193,6 +193,9 @@ globalThis.fetch = async (input, init) => {
     const body = await request.json();
     process.env.AUTH0_TV_E2E_CONNECT_REDIRECT_URI = String(body.redirect_uri || '');
     process.env.AUTH0_TV_E2E_CONNECT_STATE = String(body.state || '');
+    // Store the connection and scopes for the complete endpoint to use
+    process.env.AUTH0_TV_E2E_CONNECT_CONNECTION = String(body.connection || '');
+    process.env.AUTH0_TV_E2E_CONNECT_SCOPES = JSON.stringify(body.scopes || []);
 
     return jsonResponse({
       auth_session: 'mock-auth-session-123',
@@ -207,21 +210,30 @@ globalThis.fetch = async (input, init) => {
     url.pathname === '/me/v1/connected-accounts/complete' &&
     method === 'POST'
   ) {
+    const connection = process.env.AUTH0_TV_E2E_CONNECT_CONNECTION || 'google-oauth2';
+    let scopes;
+    try {
+      scopes = JSON.parse(process.env.AUTH0_TV_E2E_CONNECT_SCOPES || '[]');
+    } catch {
+      scopes = [];
+    }
+    const accountId = `ca_${connection.replace(/[^a-z0-9]/gi, '_')}`;
+
     const remoteAccounts = await loadRemoteAccounts();
-    const existing = remoteAccounts.find((account) => account.connection === 'google-oauth2');
+    const existing = remoteAccounts.find((account) => account.connection === connection);
     if (!existing) {
       remoteAccounts.push({
-        id: 'ca_abc123',
-        connection: 'google-oauth2',
-        scopes: ['https://www.googleapis.com/auth/gmail.modify'],
+        id: accountId,
+        connection,
+        scopes,
       });
       await saveRemoteAccounts(remoteAccounts);
     }
 
     return jsonResponse({
-      id: 'ca_abc123',
-      connection: 'google-oauth2',
-      scopes: ['https://www.googleapis.com/auth/gmail.modify'],
+      id: accountId,
+      connection,
+      scopes,
       access_type: 'offline',
       created_at: '2026-03-26T00:00:00.000Z',
     });

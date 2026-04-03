@@ -7,6 +7,7 @@ import {
   getServiceForConnection,
   getServicesForConnection,
   getAvailableServices,
+  resolveService,
 } from '../../src/utils/service-registry.js';
 
 describe('service-registry', () => {
@@ -117,5 +118,57 @@ describe('service-registry', () => {
 
   it('getAllowedDomainsForService returns undefined for unknown service', () => {
     expect(getAllowedDomainsForService('unknown')).toBeUndefined();
+  });
+
+  describe('resolveService', () => {
+    it('returns known entry with isKnown true for gmail', () => {
+      const resolved = resolveService('gmail');
+      expect(resolved.isKnown).toBe(true);
+      expect(resolved.connection).toBe('google-oauth2');
+      expect(resolved.scopes).toContain('https://www.googleapis.com/auth/gmail.modify');
+      expect(resolved.allowedDomains).toEqual(['*.googleapis.com']);
+    });
+
+    it('returns known entry for all registered services', () => {
+      for (const service of ['gmail', 'calendar', 'github', 'slack']) {
+        const resolved = resolveService(service);
+        expect(resolved.isKnown).toBe(true);
+        expect(resolved.connection).toBeTruthy();
+      }
+    });
+
+    it('is case-insensitive for known services', () => {
+      expect(resolveService('Gmail').isKnown).toBe(true);
+      expect(resolveService('GMAIL').isKnown).toBe(true);
+      expect(resolveService('Slack').isKnown).toBe(true);
+    });
+
+    it('returns unknown entry with input as connection for unrecognized service', () => {
+      const resolved = resolveService('my-custom-idp');
+      expect(resolved.isKnown).toBe(false);
+      expect(resolved.connection).toBe('my-custom-idp');
+      expect(resolved.scopes).toEqual([]);
+      expect(resolved.allowedDomains).toEqual([]);
+    });
+
+    it('lowercases connection name for unknown services', () => {
+      const resolved = resolveService('My-Custom-IDP');
+      expect(resolved.isKnown).toBe(false);
+      expect(resolved.connection).toBe('my-custom-idp');
+    });
+
+    it('handles Auth0 connection identifiers as unknown services', () => {
+      const resolved = resolveService('google-oauth2');
+      // google-oauth2 is not a known service name (gmail/calendar are), so it's unknown
+      expect(resolved.isKnown).toBe(false);
+      expect(resolved.connection).toBe('google-oauth2');
+    });
+
+    it('handles sign-in-with-slack as unknown (not a known service name)', () => {
+      // sign-in-with-slack is a connection name, not a service name
+      const resolved = resolveService('sign-in-with-slack');
+      expect(resolved.isKnown).toBe(false);
+      expect(resolved.connection).toBe('sign-in-with-slack');
+    });
   });
 });
