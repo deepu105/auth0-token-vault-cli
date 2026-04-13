@@ -375,14 +375,14 @@ describe.sequential('CLI e2e', () => {
   it('init: full happy path with fake scripts', async () => {
     fixture = await setupE2eFixture();
 
-    // Run init with stdin providing the client_id when prompted.
-    const result = await fixture.runInitWithStdin(['init'], 'test-client-id\n');
+    // Client ID is auto-detected from configure-auth0-token-vault output; no stdin needed.
+    const result = await fixture.runInitWithStdin(['init'], '');
 
     expect(result.code).toBe(0);
 
     // Verify setup wizard output
     expect(result.stderr).toContain('Setup Wizard');
-    expect(result.stderr).toContain('Callback URLs configured');
+    expect(result.stderr).toContain('Detected Client ID');
     expect(result.stderr).toContain('Credentials retrieved');
     expect(result.stderr).toContain('Setup complete');
 
