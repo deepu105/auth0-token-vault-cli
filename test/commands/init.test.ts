@@ -1,5 +1,33 @@
 import { describe, it, expect } from 'vitest';
-import { parseSingleTenant, parseAppSecret } from '../../src/commands/init.js';
+import { parseClientId, parseSingleTenant, parseAppSecret } from '../../src/commands/init.js';
+
+describe('init: parseClientId', () => {
+  it('parses client ID from configure output', () => {
+    const out = 'Configuring...\nYour application Client ID: abc123\nDone.\n';
+    expect(parseClientId(out)).toBe('abc123');
+  });
+
+  it('parses with extra whitespace', () => {
+    expect(parseClientId('Client ID:   my-id-456')).toBe('my-id-456');
+  });
+
+  it('is case-insensitive', () => {
+    expect(parseClientId('client id: XYZ')).toBe('XYZ');
+  });
+
+  it('returns undefined when no match', () => {
+    expect(parseClientId('No client info here')).toBeUndefined();
+  });
+
+  it('returns undefined for empty string', () => {
+    expect(parseClientId('')).toBeUndefined();
+  });
+
+  it('strips ANSI escape codes from PTY output', () => {
+    const out = 'Client ID: \x1b[2mP8OfyRUnCkBXDTquR4SOK5VtDtRpoj72\x1b[22m\x1b[2m\x1b[22m';
+    expect(parseClientId(out)).toBe('P8OfyRUnCkBXDTquR4SOK5VtDtRpoj72');
+  });
+});
 
 describe('init: parseSingleTenant', () => {
   it('returns domain for single tenant', () => {

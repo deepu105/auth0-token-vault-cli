@@ -3,6 +3,7 @@ import { execFile, spawn } from 'node:child_process';
 import { createInterface } from 'node:readline/promises';
 import { promisify } from 'node:util';
 import chalk from 'chalk';
+import * as nodePty from 'node-pty';
 import { resolveBrowser, resolveCallbackPort } from '../utils/config.js';
 import { output, outputError } from '../utils/output.js';
 import { EXIT_GENERAL } from '../utils/exit-codes.js';
@@ -30,6 +31,67 @@ async function runInherited(cmd: string, args: string[]): Promise<boolean> {
     child.on('close', (code) => resolve(code === 0));
     child.on('error', () => resolve(false));
   });
+}
+
+/**
+ * Run a command inside a pseudo-TTY so it stays interactive, while
+ * capturing all output. The output is piped to the real stdout so the
+ * user sees it as normal.
+ */
+async function runInteractiveCaptured(
+  cmd: string,
+  args: string[]
+): Promise<{ ok: boolean; output: string }> {
+  return new Promise((resolve) => {
+    const pty = nodePty.spawn(cmd, args, {
+      name: 'xterm-color',
+      cols: process.stdout.columns || 80,
+      rows: process.stdout.rows || 24,
+      cwd: process.cwd(),
+      env: process.env as Record<string, string>,
+    });
+
+    const chunks: string[] = [];
+
+    pty.onData((data) => {
+      chunks.push(data);
+      process.stdout.write(data);
+    });
+
+    // Forward user keystrokes to the PTY
+    if (process.stdin.isTTY) {
+      process.stdin.setRawMode(true);
+    }
+    process.stdin.resume();
+    const onData = (data: Buffer) => pty.write(data.toString());
+    process.stdin.on('data', onData);
+
+    pty.onExit(({ exitCode }) => {
+      process.stdin.removeListener('data', onData);
+      if (process.stdin.isTTY) {
+        process.stdin.setRawMode(false);
+      }
+      process.stdin.pause();
+      resolve({ ok: exitCode === 0, output: chunks.join('') });
+    });
+  });
+}
+
+/** Strip ANSI escape sequences from a string. */
+function stripAnsi(str: string): string {
+  // eslint-disable-next-line no-control-regex
+  return str.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
+/**
+ * Parse the Client ID from `configure-auth0-token-vault` output.
+ * Looks for a line like "Your application Client ID: <id>".
+ * Strips ANSI escape codes first since the output comes from a PTY.
+ */
+export function parseClientId(output: string): string | undefined {
+  const clean = stripAnsi(output);
+  const match = clean.match(/Client\s+ID:\s*(\S+)/i);
+  return match?.[1];
 }
 
 /** Run a command and capture its stdout. Throws on non-zero exit. */
@@ -178,19 +240,24 @@ export function registerInitCommand(program: Command) {
         process.stderr.write('The configuration wizard will guide you through setting up Auth0\n');
         process.stderr.write('Token Vault for your tenant.\n\n');
 
-        const configOk = await runInherited('npx', [
+        const callbacks = CALLBACK_PORTS.map((p) => `http://127.0.0.1:${p}/callback`).join(',');
+        const logoutUrls = CALLBACK_PORTS.map((p) => `http://127.0.0.1:${p}`).join(',');
+
+        const configResult = await runInteractiveCaptured('npx', [
           'configure-auth0-token-vault',
           '--',
           '--flavor=refresh_token_exchange',
+          `--callback-urls=${callbacks}`,
+          `--logout-urls=${logoutUrls}`,
         ]);
 
-        if (!configOk) {
+        if (!configResult.ok) {
           throw new Error(
             'Token Vault configuration failed. Fix the issue and run `auth0-tv init` again.'
           );
         }
 
-        // Step 2: Get Client ID
+        // Step 2: Get Client ID (auto-detect from output, fall back to prompt)
         const rl = createInterface({
           input: process.stdin,
           output: process.stderr,
@@ -198,34 +265,15 @@ export function registerInitCommand(program: Command) {
 
         try {
           process.stderr.write('\n');
-          const clientId = await askRequired(rl, 'Enter the Client ID from the output above: ');
-
-          // Step 3: Update callback URLs
-          process.stderr.write(`\n${chalk.bold('Step 2: Configure callback URLs')}\n`);
-
-          const callbacks = CALLBACK_PORTS.map((p) => `http://127.0.0.1:${p}/callback`).join(',');
-          const logoutUrls = CALLBACK_PORTS.map((p) => `http://127.0.0.1:${p}`).join(',');
-
-          const updateOk = await runInherited('auth0', [
-            'apps',
-            'update',
-            clientId,
-            '--callbacks',
-            callbacks,
-            '--logout-urls',
-            logoutUrls,
-          ]);
-
-          if (!updateOk) {
-            throw new Error(
-              `Failed to update callback URLs. Run manually:\n  ` +
-                `auth0 apps update ${clientId} --callbacks "${callbacks}" --logout-urls "${logoutUrls}"`
-            );
+          let clientId = parseClientId(configResult.output);
+          if (clientId) {
+            process.stderr.write(`${chalk.green('✓')} Detected Client ID: ${clientId}\n`);
+          } else {
+            clientId = await askRequired(rl, 'Enter the Client ID from the output above: ');
           }
-          process.stderr.write(`${chalk.green('✓')} Callback URLs configured.\n\n`);
 
-          // Step 4: Retrieve credentials
-          process.stderr.write(`${chalk.bold('Step 3: Retrieve credentials')}\n`);
+          // Step 3: Retrieve credentials
+          process.stderr.write(`\n${chalk.bold('Step 2: Retrieve credentials')}\n`);
 
           const { domain, clientSecret } = await getAppCredentials(clientId, rl);
 
@@ -233,8 +281,8 @@ export function registerInitCommand(program: Command) {
           process.stderr.write(`  Domain:    ${domain}\n`);
           process.stderr.write(`  Client ID: ${clientId}\n\n`);
 
-          // Step 5: Login — delegate to shared login flow
-          process.stderr.write(`${chalk.bold('Step 4: Authenticate')}\n`);
+          // Step 4: Login — delegate to shared login flow
+          process.stderr.write(`${chalk.bold('Step 3: Authenticate')}\n`);
 
           // Set env vars so resolveConfigWithPrompts finds them without prompting
           process.env.AUTH0_DOMAIN = domain;
@@ -247,7 +295,7 @@ export function registerInitCommand(program: Command) {
 
           await runLogin({ existing: null, browser, port });
 
-          // Step 6: Next steps
+          // Step 5: Next steps
           process.stderr.write(`\n${chalk.bold('🎉 Setup complete!')}\n\n`);
           process.stderr.write(`${chalk.bold('Next steps:')}\n`);
           process.stderr.write(`  ${chalk.dim('1.')} Connect a provider:\n`);

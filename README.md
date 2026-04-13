@@ -84,6 +84,12 @@ Then browse and install:
 /plugin install auth0-token-vault@auth0-token-vault
 ```
 
+Reload plugins:
+
+```
+/reload-plugins
+```
+
 **ClawHub (OpenClaw skill registry):** Install the skill via [ClawHub](https://clawhub.ai):
 
 ```bash
