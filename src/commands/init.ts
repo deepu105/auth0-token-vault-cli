@@ -37,19 +37,30 @@ async function runInherited(cmd: string, args: string[]): Promise<boolean> {
  * Run a command inside a pseudo-TTY so it stays interactive, while
  * capturing all output. The output is piped to the real stdout so the
  * user sees it as normal.
+ *
+ * Falls back to plain inherited stdio if node-pty fails to spawn (e.g. the
+ * native binding isn't available for this Node/arch). In that case the
+ * captured output is empty and the caller must prompt for any values it
+ * would otherwise have parsed.
  */
 async function runInteractiveCaptured(
   cmd: string,
   args: string[]
 ): Promise<{ ok: boolean; output: string }> {
-  return new Promise((resolve) => {
-    const pty = nodePty.spawn(cmd, args, {
-      name: 'xterm-color',
-      cols: process.stdout.columns || 80,
-      rows: process.stdout.rows || 24,
-      cwd: process.cwd(),
-      env: process.env as Record<string, string>,
-    });
+  return new Promise((resolve, reject) => {
+    let pty: ReturnType<typeof nodePty.spawn>;
+    try {
+      pty = nodePty.spawn(cmd, args, {
+        name: 'xterm-color',
+        cols: process.stdout.columns || 80,
+        rows: process.stdout.rows || 24,
+        cwd: process.cwd(),
+        env: process.env as Record<string, string>,
+      });
+    } catch (err) {
+      reject(err);
+      return;
+    }
 
     const chunks: string[] = [];
 
@@ -243,13 +254,29 @@ export function registerInitCommand(program: Command) {
         const callbacks = CALLBACK_PORTS.map((p) => `http://127.0.0.1:${p}/callback`).join(',');
         const logoutUrls = CALLBACK_PORTS.map((p) => `http://127.0.0.1:${p}`).join(',');
 
-        const configResult = await runInteractiveCaptured('npx', [
+        const configArgs = [
           'configure-auth0-token-vault',
           '--',
           '--flavor=refresh_token_exchange',
           `--callback-urls=${callbacks}`,
           `--logout-urls=${logoutUrls}`,
-        ]);
+        ];
+
+        let configResult: { ok: boolean; output: string };
+        try {
+          configResult = await runInteractiveCaptured('npx', configArgs);
+        } catch (err: unknown) {
+          // node-pty native binding unavailable on this platform/Node build.
+          // Fall back to plain inherited stdio — we lose output capture, so
+          // the Client ID parsing below will miss and we'll prompt for it.
+          const message = err instanceof Error ? err.message : String(err);
+          process.stderr.write(
+            `${chalk.yellow('!')} Interactive capture unavailable (${message}). ` +
+              `Falling back to plain mode — you'll be asked to copy the Client ID manually.\n\n`
+          );
+          const ok = await runInherited('npx', configArgs);
+          configResult = { ok, output: '' };
+        }
 
         if (!configResult.ok) {
           throw new Error(
