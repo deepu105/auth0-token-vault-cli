@@ -433,15 +433,18 @@ For `minor` or `major` releases, replace `patch` with the appropriate semver bum
 - run `npm run release:check`
 - publish to npm with provenance
 - create the GitHub release notes automatically
+- publish the Agent Skill at `skills/auth0-token-vault` to [ClawHub](https://clawhub.ai)
 
-After the npm release, publish the updated skill to [ClawHub](https://clawhub.ai):
+The skill version is read from `skills/auth0-token-vault/SKILL.md` frontmatter and is decoupled from the npm version — bump it there when the skill itself changes. The publish step requires a `CLAWHUB_TOKEN` repository secret.
+
+To publish a skill update manually (without cutting an npm release):
 
 ```bash
-clawhub publish ./skills/auth0-token-vault \
+clawhub skill publish \
   --slug auth0-token-vault \
   --version <new-version> \
-  --tags latest \
-  --changelog "<changelog>"
+  --changelog "<changelog>" \
+  ./skills/auth0-token-vault
 ```
 
 ## Credential Storage

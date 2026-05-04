@@ -13,7 +13,7 @@ license: MIT
 allowed-tools: Bash(auth0-tv *)
 metadata:
   author: deepu105
-  version: '0.3'
+  version: '0.6.1'
   openclaw:
     emoji: "\U0001F510"
     requires:

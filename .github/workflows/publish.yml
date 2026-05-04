@@ -34,3 +34,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: gh release create "$TAG" --generate-notes
+
+  # Publishes the Agent Skill at skills/auth0-token-vault to ClawHub.
+  # Version is read from SKILL.md frontmatter (not the npm tag), so bumping
+  # the skill is independent of npm patches. If SKILL.md hasn't changed
+  # since the last release, clawhub will reject the duplicate and this job
+  # fails — that's expected; the npm release already succeeded.
+  publish-skill:
+    needs: publish
+    uses: openclaw/clawhub/.github/workflows/package-publish.yml@v0.1.0
+    with:
+      source_path: skills/auth0-token-vault
+      tags: latest
+      dry_run: false
+    secrets:
+      clawhub_token: ${{ secrets.CLAWHUB_TOKEN }}
