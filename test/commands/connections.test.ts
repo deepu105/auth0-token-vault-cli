@@ -9,7 +9,22 @@ import { CredentialStore, EXPIRY_BUFFER_MS } from '../../src/store/credential-st
 import { handlers, mockTokenResponse, mockListAccountsResponse } from '../mocks/handlers.js';
 import { listConnectedAccounts } from '../../src/auth/connected-accounts.js';
 import { requireConfig, type Auth0Config } from '../../src/utils/config.js';
-import { getServicesForConnection } from '../../src/utils/service-registry.js';
+import { getServicesForConnection, resolveService } from '../../src/utils/service-registry.js';
+
+async function resolveAllowedDomains(
+  store: CredentialStore,
+  connection: string,
+  services: string[]
+): Promise<string[]> {
+  const keys = services.length > 0 ? services : [connection];
+  const domains = new Set<string>();
+  for (const key of keys) {
+    for (const d of resolveService(key).allowedDomains) domains.add(d);
+    const settings = await store.getServiceSettings(key);
+    for (const d of settings?.allowedDomains ?? []) domains.add(d);
+  }
+  return [...domains];
+}
 
 const config: Auth0Config = {
   domain: 'test.auth0.com',
@@ -228,5 +243,49 @@ describe('connections command data', () => {
     expect(entries[0].service).toBe('gmail, calendar');
     // Custom connection falls back to raw connection name
     expect(entries[1].service).toBe('my-custom-idp');
+  });
+
+  it('includes allowed domains from registry defaults and stored settings', async () => {
+    await store.saveAuth0Tokens({
+      accessToken: mockTokenResponse.access_token,
+      refreshToken: REFRESH_TOKEN,
+      expiresAt: Date.now() + 86400_000,
+    });
+    // Stored custom domain extends registry defaults for gmail
+    await store.saveServiceSettings('gmail', { allowedDomains: ['mail.example.com'] });
+    // Custom connection with only stored domains (no registry defaults)
+    await store.saveServiceSettings('acme-helpdesk', {
+      allowedDomains: ['api.acme.example'],
+    });
+
+    msw.use(
+      http.get('https://test.auth0.com/me/v1/connected-accounts/accounts', () =>
+        HttpResponse.json({
+          accounts: [
+            { id: 'ca_1', connection: 'google-oauth2', scopes: [] },
+            { id: 'ca_2', connection: 'acme-helpdesk', scopes: ['read:tickets'] },
+          ],
+        })
+      )
+    );
+
+    const remoteAccounts = await listConnectedAccounts(config, REFRESH_TOKEN);
+    const entries = await Promise.all(
+      remoteAccounts.map(async (acct) => {
+        const services = getServicesForConnection(acct.connection);
+        return {
+          connection: acct.connection,
+          services,
+          allowedDomains: await resolveAllowedDomains(store, acct.connection, services),
+        };
+      })
+    );
+
+    // gmail registry default + calendar registry default (same) + stored gmail custom
+    expect(entries[0].allowedDomains).toEqual(
+      expect.arrayContaining(['*.googleapis.com', 'mail.example.com'])
+    );
+    // Custom connection has only what was stored
+    expect(entries[1].allowedDomains).toEqual(['api.acme.example']);
   });
 });

@@ -5,7 +5,28 @@ import { CredentialStore, EXPIRY_BUFFER_MS } from '../store/credential-store.js'
 import { listConnectedAccounts } from '../auth/connected-accounts.js';
 import { requireConfig } from '../utils/config.js';
 import { logError } from '../utils/logger.js';
-import { getServicesForConnection } from '../utils/service-registry.js';
+import { getServicesForConnection, resolveService } from '../utils/service-registry.js';
+
+/**
+ * Merge registry defaults and stored settings to get the allowed domains
+ * that `fetch` would honor for this connection. For known connections we
+ * iterate each service name (e.g. gmail, calendar for google-oauth2); for
+ * custom connections we look up settings stored under the connection name.
+ */
+async function resolveAllowedDomains(
+  store: CredentialStore,
+  connection: string,
+  services: string[]
+): Promise<string[]> {
+  const keys = services.length > 0 ? services : [connection];
+  const domains = new Set<string>();
+  for (const key of keys) {
+    for (const d of resolveService(key).allowedDomains) domains.add(d);
+    const settings = await store.getServiceSettings(key);
+    for (const d of settings?.allowedDomains ?? []) domains.add(d);
+  }
+  return [...domains];
+}
 
 function localTokenStatus(entry: { expiresAt: number } | null): 'valid' | 'expired' | 'none' {
   if (!entry) return 'none';
@@ -23,9 +44,14 @@ function formatConnectionLine(e: {
   connection: string;
   tokenStatus: string;
   scopes: string[];
+  allowedDomains: string[];
 }): string {
   const scopes = e.scopes.length > 0 ? `\n    scopes: ${chalk.dim(e.scopes.join(', '))}` : '';
-  return `  ${chalk.cyan(e.service)} (${e.connection}) — local token: ${formatTokenStatus(e.tokenStatus)}${scopes}`;
+  const domains =
+    e.allowedDomains.length > 0
+      ? `\n    allowed domains: ${chalk.dim(e.allowedDomains.join(', '))}`
+      : '';
+  return `  ${chalk.cyan(e.service)} (${e.connection}) — local token: ${formatTokenStatus(e.tokenStatus)}${scopes}${domains}`;
 }
 
 export function registerConnectionsCommand(program: Command) {
@@ -53,6 +79,7 @@ export function registerConnectionsCommand(program: Command) {
         service: string;
         scopes: string[];
         tokenStatus: string;
+        allowedDomains: string[];
         remote: boolean;
         id?: string;
       }[];
@@ -70,6 +97,7 @@ export function registerConnectionsCommand(program: Command) {
               id: acct.id,
               scopes: acct.scopes,
               tokenStatus: localTokenStatus(localEntry),
+              allowedDomains: await resolveAllowedDomains(store, acct.connection, services),
               remote: true,
             };
           })
@@ -87,6 +115,7 @@ export function registerConnectionsCommand(program: Command) {
               service: services.join(', ') || conn,
               scopes: entry?.scopes ?? [],
               tokenStatus: localTokenStatus(entry),
+              allowedDomains: await resolveAllowedDomains(store, conn, services),
               remote: false,
             };
           })
