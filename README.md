@@ -417,8 +417,7 @@ npm run release:check
 
 This runs the same gates used by the publish workflow:
 
-- `npm run check`
-- `npm test`
+- `npm run release:check`
 - `npm run build`
 
 To cut a release:
