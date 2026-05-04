@@ -28,6 +28,23 @@ async function resolveAllowedDomains(
   return [...domains];
 }
 
+export interface ConnectionEntry {
+  connection: string;
+  services: string[];
+  service: string;
+  scopes: string[];
+  tokenStatus: string;
+  allowedDomains: string[];
+  remote: boolean;
+  id?: string;
+}
+
+export interface ConnectionSummary {
+  entries: ConnectionEntry[];
+  /** true when remote accounts were fetched; false when falling back to local-only. */
+  remote: boolean;
+}
+
 function localTokenStatus(entry: { expiresAt: number } | null): 'valid' | 'expired' | 'none' {
   if (!entry) return 'none';
   return Date.now() >= entry.expiresAt - EXPIRY_BUFFER_MS ? 'expired' : 'valid';
@@ -37,6 +54,74 @@ function formatTokenStatus(status: string): string {
   if (status === 'valid') return chalk.green('valid');
   if (status === 'expired') return chalk.yellow('expired');
   return chalk.dim('none');
+}
+
+/**
+ * Collect the full connection listing (remote accounts merged with local
+ * token status, plus resolved allowed domains). Used by both the
+ * `connections` command and the `status` command's human output.
+ */
+export async function collectConnections(store: CredentialStore): Promise<ConnectionSummary> {
+  let remoteAccounts: { id: string; connection: string; scopes: string[] }[] | null = null;
+  try {
+    const config = await requireConfig(store);
+    const auth0Tokens = await store.getAuth0Tokens();
+    if (auth0Tokens?.refreshToken) {
+      remoteAccounts = await listConnectedAccounts(config, auth0Tokens.refreshToken);
+    }
+  } catch (err) {
+    logError('Failed to fetch remote connections, falling back to local', err);
+  }
+
+  if (remoteAccounts) {
+    const entries = await Promise.all(
+      remoteAccounts.map(async (acct) => {
+        const localEntry = await store.getConnectionEntry(acct.connection);
+        const services = getServicesForConnection(acct.connection);
+        return {
+          connection: acct.connection,
+          services,
+          service: services.join(', ') || acct.connection,
+          id: acct.id,
+          scopes: acct.scopes,
+          tokenStatus: localTokenStatus(localEntry),
+          allowedDomains: await resolveAllowedDomains(store, acct.connection, services),
+          remote: true,
+        };
+      })
+    );
+    return { entries, remote: true };
+  }
+
+  const connections = await store.listConnections();
+  const entries = await Promise.all(
+    connections.map(async (conn) => {
+      const entry = await store.getConnectionEntry(conn);
+      const services = getServicesForConnection(conn);
+      return {
+        connection: conn,
+        services,
+        service: services.join(', ') || conn,
+        scopes: entry?.scopes ?? [],
+        tokenStatus: localTokenStatus(entry),
+        allowedDomains: await resolveAllowedDomains(store, conn, services),
+        remote: false,
+      };
+    })
+  );
+  return { entries, remote: false };
+}
+
+/**
+ * Render a connection summary as human-readable text. Returns lines to be
+ * joined by the caller so they can control surrounding spacing.
+ */
+export function formatConnectionsHuman(summary: ConnectionSummary): string[] {
+  if (summary.entries.length === 0) {
+    return [chalk.dim('No services connected.')];
+  }
+  const heading = summary.remote ? 'Connected services:' : 'Connected services (local only):';
+  return [heading, ...summary.entries.map(formatConnectionLine)];
 }
 
 function formatConnectionLine(e: {
@@ -60,70 +145,9 @@ export function registerConnectionsCommand(program: Command) {
     .description('List connected services')
     .action(async (_opts, cmd: Command) => {
       const store = new CredentialStore();
+      const summary = await collectConnections(store);
 
-      // Try to fetch remote connected accounts if logged in
-      let remoteAccounts: { id: string; connection: string; scopes: string[] }[] | null = null;
-      try {
-        const config = await requireConfig(store);
-        const auth0Tokens = await store.getAuth0Tokens();
-        if (auth0Tokens?.refreshToken) {
-          remoteAccounts = await listConnectedAccounts(config, auth0Tokens.refreshToken);
-        }
-      } catch (err) {
-        logError('Failed to fetch remote connections, falling back to local', err);
-      }
-
-      let entries: {
-        connection: string;
-        services: string[];
-        service: string;
-        scopes: string[];
-        tokenStatus: string;
-        allowedDomains: string[];
-        remote: boolean;
-        id?: string;
-      }[];
-      let heading: string;
-
-      if (remoteAccounts) {
-        entries = await Promise.all(
-          remoteAccounts.map(async (acct) => {
-            const localEntry = await store.getConnectionEntry(acct.connection);
-            const services = getServicesForConnection(acct.connection);
-            return {
-              connection: acct.connection,
-              services,
-              service: services.join(', ') || acct.connection,
-              id: acct.id,
-              scopes: acct.scopes,
-              tokenStatus: localTokenStatus(localEntry),
-              allowedDomains: await resolveAllowedDomains(store, acct.connection, services),
-              remote: true,
-            };
-          })
-        );
-        heading = 'Connected services:';
-      } else {
-        const connections = await store.listConnections();
-        entries = await Promise.all(
-          connections.map(async (conn) => {
-            const entry = await store.getConnectionEntry(conn);
-            const services = getServicesForConnection(conn);
-            return {
-              connection: conn,
-              services,
-              service: services.join(', ') || conn,
-              scopes: entry?.scopes ?? [],
-              tokenStatus: localTokenStatus(entry),
-              allowedDomains: await resolveAllowedDomains(store, conn, services),
-              remote: false,
-            };
-          })
-        );
-        heading = 'Connected services (local only):';
-      }
-
-      if (entries.length === 0) {
+      if (summary.entries.length === 0) {
         output(
           { connections: [] },
           chalk.yellow('No services connected. Use `auth0-tv connect <service>` to connect one.'),
@@ -132,7 +156,6 @@ export function registerConnectionsCommand(program: Command) {
         return;
       }
 
-      const humanLines = entries.map(formatConnectionLine);
-      output({ connections: entries }, `${heading}\n${humanLines.join('\n')}`, cmd);
+      output({ connections: summary.entries }, formatConnectionsHuman(summary).join('\n'), cmd);
     });
 }

@@ -5,7 +5,7 @@ import type { Command } from 'commander';
  *  1. --json CLI flag
  *  2. AUTH0_TV_OUTPUT=json env var
  */
-function isJsonMode(cmd: Command): boolean {
+export function isJsonMode(cmd: Command): boolean {
   // Walk up to the root program to read global opts
   let root = cmd;
   while (root.parent) {

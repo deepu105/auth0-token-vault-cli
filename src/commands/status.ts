@@ -1,9 +1,10 @@
 import type { Command } from 'commander';
 import chalk from 'chalk';
 import { jwtDecode } from 'jwt-decode';
-import { output } from '../utils/output.js';
+import { output, isJsonMode } from '../utils/output.js';
 import { CredentialStore, EXPIRY_BUFFER_MS } from '../store/credential-store.js';
 import { mergeConfigFromEnvAndStore, resolveStorageBackend } from '../utils/config.js';
+import { collectConnections, formatConnectionsHuman } from './connections.js';
 
 interface IdTokenClaims {
   sub?: string;
@@ -72,11 +73,15 @@ export function registerStatusCommand(program: Command) {
         `  Email:   ${user.email ?? 'n/a'}`,
         `  Storage: ${storage}`,
         `  Session: ${expired ? chalk.yellow('expired') : chalk.green('active')}`,
-        '',
-        connections.length > 0
-          ? `  Connected: ${connections.map((c) => chalk.cyan(c)).join(', ')}`
-          : chalk.dim('  No services connected'),
       ];
+
+      // In human mode, append the full connections listing (with allowed
+      // domains, scopes, token status). Skip the remote fetch in JSON mode
+      // to keep that output local-only and stable.
+      if (!isJsonMode(cmd)) {
+        const summary = await collectConnections(store);
+        lines.push('', ...formatConnectionsHuman(summary));
+      }
 
       output(data, lines.join('\n'), cmd);
     });

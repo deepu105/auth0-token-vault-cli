@@ -53,12 +53,22 @@ export async function resolveBody(opts: {
   if (opts.body) return opts.body;
 
   if (opts.bodyFile) {
-    // Resolve to absolute and follow symlinks via realpath(), then verify the
-    // real path stays under cwd. realpath() resolves symlinks to their target,
-    // so a symlink inside cwd pointing outside will resolve to the external path
-    // and be correctly rejected by the startsWith check below.
-    const cwd = process.cwd();
-    const resolved = await realpath(resolve(cwd, opts.bodyFile));
+    // realpath() the cwd so prefix comparisons work on platforms where cwd
+    // contains symlinks (e.g. /var → /private/var on macOS).
+    const cwd = await realpath(process.cwd());
+    const absolute = resolve(cwd, opts.bodyFile);
+
+    // Syntactic check first — rejects `..` traversal even if the target
+    // doesn't exist, so realpath() isn't called on paths outside cwd.
+    if (!absolute.startsWith(`${cwd}/`) && absolute !== cwd) {
+      throw new Error(
+        `--body-file path must be within the working directory. Resolved to: ${absolute}`
+      );
+    }
+
+    // Then follow symlinks and re-check, so a symlink inside cwd pointing
+    // outside is rejected too.
+    const resolved = await realpath(absolute);
     if (!resolved.startsWith(`${cwd}/`) && resolved !== cwd) {
       throw new Error(
         `--body-file path must be within the working directory. Resolved to: ${resolved}`
