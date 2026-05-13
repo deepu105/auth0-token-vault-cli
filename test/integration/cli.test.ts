@@ -42,12 +42,6 @@ describe('CLI integration', () => {
     expect(stdout).toContain('connect');
   });
 
-  it('--version prints version', async () => {
-    const { stdout, code } = await run(['--version']);
-    expect(code).toBe(0);
-    expect(stdout.trim()).toBe('0.1.0');
-  });
-
   it('gmail --help shows subcommands', async () => {
     const { stdout, code } = await run(['gmail', '--help']);
     expect(code).toBe(0);

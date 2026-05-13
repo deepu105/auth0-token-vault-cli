@@ -1,3 +1,8 @@
+// NOTE: this suite runs only on Linux (and CI). The fixture spawns a fake
+// browser by pointing AUTH0_TV_BROWSER at a node script; the `open` package
+// delegates to xdg-open on Linux (which runs the script) but to
+// `/usr/bin/open -a <app>` on macOS (which expects a .app bundle and fails).
+// Run e2e in CI; on macOS expect timeouts.
 import { execFile, spawn } from 'node:child_process';
 import { chmod, mkdtemp, rm, symlink, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';

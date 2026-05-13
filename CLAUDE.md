@@ -44,6 +44,8 @@ npm run typecheck           # tsc --noEmit
 
 Tests use Vitest with MSW (Mock Service Worker) for HTTP mocking. Test setup (`test/setup.ts`) sets dummy Auth0 env vars to prevent accidental use of real credentials. Mock handlers are in `test/mocks/`. Tests mirror `src/` structure under `test/`.
 
+The e2e suite (`test/e2e/`, run via `npm run test:e2e`) only runs reliably on Linux. The fixture spawns a fake browser script via the `open` npm package by pointing `AUTH0_TV_BROWSER` at a node script — this works on Linux (via `xdg-open`) but fails on macOS because `/usr/bin/open -a <app>` requires a real `.app` bundle. Rely on CI (`ubuntu-latest`) to run e2e; skip locally on macOS.
+
 ## Key Conventions
 
 - ESM throughout (`"type": "module"` in package.json) — all local imports use `.js` extensions
