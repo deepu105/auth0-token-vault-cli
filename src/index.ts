@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import { createRequire } from 'node:module';
 import chalk from 'chalk';
 import { logError } from './utils/logger.js';
+
+const pkg = createRequire(import.meta.url)('../package.json') as { version: string };
 import { EXIT_GENERAL, EXIT_INVALID_INPUT } from './utils/exit-codes.js';
 import { registerLoginCommand } from './commands/login.js';
 import { registerLogoutCommand } from './commands/logout.js';
@@ -27,7 +30,7 @@ import { registerInitCommand } from './commands/init.js';
 const program = new Command()
   .name('auth0-tv')
   .description('Auth0 Token Vault CLI — access third-party services via Auth0 Token Vault')
-  .version('0.1.0')
+  .version(pkg.version)
   .option('--json', 'Output results as JSON (for agent consumption)')
   .option('--confirm', 'Skip destructive-action confirmation prompts (alias: --yes)')
   .option('--yes', 'Skip destructive-action confirmation prompts (alias: --confirm)')

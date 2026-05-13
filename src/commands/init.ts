@@ -254,10 +254,14 @@ export function registerInitCommand(program: Command) {
         const callbacks = CALLBACK_PORTS.map((p) => `http://127.0.0.1:${p}/callback`).join(',');
         const logoutUrls = CALLBACK_PORTS.map((p) => `http://127.0.0.1:${p}`).join(',');
 
+        // Pinned to 1.3.0: earlier versions coupled --app-name and --app-type,
+        // so passing --app-type=regular silently suppressed the app-name prompt.
+        // Fixed in 1.3.0 (Sambego/configure-auth0-token-vault#3).
         const configArgs = [
-          'configure-auth0-token-vault',
+          'configure-auth0-token-vault@1.3.0',
           '--',
           '--flavor=refresh_token_exchange',
+          '--app-type=regular',
           `--callback-urls=${callbacks}`,
           `--logout-urls=${logoutUrls}`,
         ];
