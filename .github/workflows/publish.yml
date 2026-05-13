@@ -35,17 +35,26 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: gh release create "$TAG" --generate-notes
 
-  # Publishes the Agent Skill at skills/auth0-token-vault to ClawHub.
-  # Version is read from SKILL.md frontmatter (not the npm tag), so bumping
-  # the skill is independent of npm patches. If SKILL.md hasn't changed
-  # since the last release, clawhub will reject the duplicate and this job
-  # fails — that's expected; the npm release already succeeded.
-  publish-skill:
-    needs: publish
-    uses: openclaw/clawhub/.github/workflows/package-publish.yml@v0.15.0
-    with:
-      source_path: skills/auth0-token-vault
-      tags: latest
-      dry_run: false
-    secrets:
-      clawhub_token: ${{ secrets.CLAWHUB_TOKEN }}
+  # ClawHub publish is temporarily disabled.
+  #
+  # This repo is structurally a Claude plugin marketplace (see
+  # .claude-plugin/marketplace.json) that bundles the skill at
+  # ./skills/auth0-token-vault. ClawHub's `package publish` in v0.15.0
+  # only recognises `code-plugin` and `bundle-plugin` families — there's
+  # no `skill` family and no `--family` input on the reusable workflow,
+  # so pointing `source_path` at the skill dir fails with
+  # "Could not detect package family."
+  #
+  # Options when reintroducing:
+  #   - Publish the repo root as a bundle-plugin (drop source_path; clawhub
+  #     detects via the skills/ directory marker).
+  #   - Wait for upstream to add skill-family / --family support.
+  #
+  # publish-skill:
+  #   needs: publish
+  #   uses: openclaw/clawhub/.github/workflows/package-publish.yml@v0.15.0
+  #   with:
+  #     tags: latest
+  #     dry_run: false
+  #   secrets:
+  #     clawhub_token: ${{ secrets.CLAWHUB_TOKEN }}
