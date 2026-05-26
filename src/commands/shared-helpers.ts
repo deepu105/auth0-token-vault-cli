@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import { createInterface } from 'node:readline/promises';
+import * as p from '@clack/prompts';
 import { readFile, realpath } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { outputError } from '../utils/output.js';
@@ -33,12 +33,13 @@ export async function requireConfirmation(action: string, cmd: Command): Promise
     process.exit(EXIT_INVALID_INPUT);
   }
 
-  const rl = createInterface({ input: process.stdin, output: process.stderr });
-  const answer = await rl.question(`${action} — are you sure? (y/N) `);
-  rl.close();
+  const confirmed = await p.confirm({
+    message: `${action} — are you sure?`,
+    initialValue: false,
+  });
 
-  if (answer.toLowerCase() !== 'y') {
-    process.stderr.write('Cancelled.\n');
+  if (p.isCancel(confirmed) || !confirmed) {
+    p.cancel('Cancelled.');
     process.exit(0);
   }
 }

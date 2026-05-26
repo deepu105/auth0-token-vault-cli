@@ -16,7 +16,6 @@ const CLI = join(import.meta.dirname, '../../dist/index.js');
 const PRELOAD = join(import.meta.dirname, 'runtime/register-mocks.mjs');
 const FAKE_BROWSER = join(import.meta.dirname, 'runtime/fake-browser.mjs');
 const FAKE_AUTH0 = join(import.meta.dirname, 'runtime/fake-auth0.mjs');
-const FAKE_NPX = join(import.meta.dirname, 'runtime/fake-npx.mjs');
 
 export interface CliResult {
   stdout: string;
@@ -36,13 +35,11 @@ export async function setupE2eFixture(): Promise<E2eFixture> {
   const tempDir = await mkdtemp(join(tmpdir(), 'auth0-tv-e2e-'));
   await chmod(FAKE_BROWSER, 0o755);
   await chmod(FAKE_AUTH0, 0o755);
-  await chmod(FAKE_NPX, 0o755);
 
-  // Create a bin directory with symlinks to fake scripts (named auth0/npx)
+  // Create a bin directory with symlink to fake auth0 CLI
   const fakeBinDir = join(tempDir, 'fake-bin');
   await mkdir(fakeBinDir, { recursive: true });
   await symlink(FAKE_AUTH0, join(fakeBinDir, 'auth0'));
-  await symlink(FAKE_NPX, join(fakeBinDir, 'npx'));
 
   const store = new CredentialStore(tempDir);
 

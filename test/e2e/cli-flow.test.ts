@@ -372,19 +372,19 @@ describe.sequential('CLI e2e', () => {
     });
   });
 
-  it('init: full happy path with fake scripts', async () => {
+  it('init: creates new app with --app-name', async () => {
     fixture = await setupE2eFixture();
 
-    // Client ID is auto-detected from configure-auth0-token-vault output; no stdin needed.
-    const result = await fixture.runInitWithStdin(['init'], '');
+    // --app-name skips the interactive prompt; non-TTY skips connection selection
+    const result = await fixture.runInitWithStdin(['init', '--app-name', 'My Test App'], '');
 
     expect(result.code).toBe(0);
 
     // Verify setup wizard output
-    expect(result.stderr).toContain('Setup Wizard');
-    expect(result.stderr).toContain('Detected Client ID');
-    expect(result.stderr).toContain('Credentials retrieved');
-    expect(result.stderr).toContain('Setup complete');
+    const combined = result.stdout + result.stderr;
+    expect(combined).toContain('Setup Wizard');
+    expect(combined).toContain('Credentials retrieved');
+    expect(combined).toContain('Setup complete');
 
     // After init, verify status shows logged in
     const status = await fixture.run(['--json', 'status']);
@@ -393,6 +393,45 @@ describe.sequential('CLI e2e', () => {
     expect(json.loggedIn).toBe(true);
     expect(json.domain).toBe('test.auth0.com');
     expect(json.clientId).toBe('test-client-id');
+  });
+
+  it('init: uses existing app with --app-id', async () => {
+    fixture = await setupE2eFixture();
+
+    // --app-id uses an existing application by client ID
+    const result = await fixture.runInitWithStdin(['init', '--app-id', 'test-client-id'], '');
+
+    expect(result.code).toBe(0);
+
+    const combined = result.stdout + result.stderr;
+    expect(combined).toContain('Setup Wizard');
+    expect(combined).toContain('Token Vault Test App');
+    expect(combined).toContain('Credentials retrieved');
+    expect(combined).toContain('Setup complete');
+
+    // Verify credentials were persisted
+    const status = await fixture.run(['--json', 'status']);
+    expect(status.code).toBe(0);
+    const json = parseJson(status);
+    expect(json.loggedIn).toBe(true);
+    expect(json.domain).toBe('test.auth0.com');
+    expect(json.clientId).toBe('test-client-id');
+  });
+
+  it('init: configures Token Vault grant types and connected accounts', async () => {
+    fixture = await setupE2eFixture();
+
+    const result = await fixture.runInitWithStdin(['init', '--app-name', 'Grant Test'], '');
+
+    expect(result.code).toBe(0);
+
+    // Verify all configuration steps ran
+    const combined = result.stdout + result.stderr;
+    expect(combined).toContain('Auth0 CLI detected');
+    expect(combined).toContain('Connected to tenant');
+    expect(combined).toContain('Application created');
+    expect(combined).toContain('Application configured for Token Vault');
+    expect(combined).toContain('Connected Accounts configured');
   });
 
   it('init: fails in non-interactive mode', async () => {

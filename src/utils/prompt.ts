@@ -1,4 +1,4 @@
-import { createInterface } from 'node:readline/promises';
+import * as p from '@clack/prompts';
 import type { StoredConfig } from '../store/types.js';
 import { mergeConfigFromEnvAndStore } from './config.js';
 
@@ -29,27 +29,60 @@ export async function resolveConfigWithPrompts(
     );
   }
 
-  const rl = createInterface({ input: process.stdin, output: process.stderr });
+  p.log.info('Auth0 configuration required.');
 
-  try {
-    process.stderr.write('\nAuth0 configuration required.\n\n');
+  const results = await p.group(
+    {
+      domain: () =>
+        merged.domain
+          ? Promise.resolve(merged.domain)
+          : p.text({
+              message: 'Auth0 domain:',
+              placeholder: 'your-tenant.eu.auth0.com',
+              validate: (value) => {
+                if (!value) return 'Domain is required';
+              },
+            }),
+      clientId: () =>
+        merged.clientId
+          ? Promise.resolve(merged.clientId)
+          : p.text({
+              message: 'Client ID:',
+              validate: (value) => {
+                if (!value) return 'Client ID is required';
+              },
+            }),
+      clientSecret: () =>
+        merged.clientSecret
+          ? Promise.resolve(merged.clientSecret)
+          : p.password({
+              message: 'Client secret:',
+              validate: (value) => {
+                if (!value) return 'Client secret is required';
+              },
+            }),
+      audience: () =>
+        merged.audience
+          ? Promise.resolve(merged.audience)
+          : p.text({
+              message: 'Audience (optional, press Enter to skip):',
+              placeholder: '',
+            }),
+    },
+    {
+      onCancel: () => {
+        p.cancel('Configuration cancelled.');
+        process.exit(1);
+      },
+    }
+  );
 
-    const domain =
-      merged.domain || (await askRequired(rl, 'Auth0 domain (e.g. your-tenant.eu.auth0.com): '));
-    const clientId = merged.clientId || (await askRequired(rl, 'Client ID: '));
-    const clientSecret = merged.clientSecret || (await askRequired(rl, 'Client secret: '));
-    const audience =
-      merged.audience || (await rl.question('Audience (optional, press Enter to skip): ')).trim();
-
-    return {
-      domain: cleanDomain(domain),
-      clientId,
-      clientSecret,
-      audience: audience || undefined,
-    };
-  } finally {
-    rl.close();
-  }
+  return {
+    domain: cleanDomain(results.domain),
+    clientId: results.clientId,
+    clientSecret: results.clientSecret,
+    audience: results.audience || undefined,
+  };
 }
 
 /** Strip protocol prefix and trailing slashes from a domain string.
@@ -58,18 +91,4 @@ export async function resolveConfigWithPrompts(
  * malformed domains, providing defense-in-depth against injection. */
 export function cleanDomain(domain: string): string {
   return domain.replace(/^https?:\/\//, '').replace(/\/+$/, '');
-}
-
-export async function askRequired(
-  rl: ReturnType<typeof createInterface>,
-  prompt: string
-): Promise<string> {
-  let value = '';
-  while (!value) {
-    value = (await rl.question(prompt)).trim();
-    if (!value) {
-      process.stderr.write('  This field is required.\n');
-    }
-  }
-  return value;
 }
